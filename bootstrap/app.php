@@ -11,6 +11,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+
+        // Trust Railway's reverse proxy so Laravel detects HTTPS correctly
+        $middleware->trustProxies(at: '*');
+
         // Register your custom alias here
         $middleware->alias([
             'user.auth' => \App\Http\Middleware\AuthMiddleware::class,
@@ -18,4 +22,5 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
-    })->create();
+    })
+    ->create();
