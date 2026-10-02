@@ -73,7 +73,7 @@ class AuthController extends Controller
 
 
     /**
-     * Login user.
+     * Login normal customer only.
      */
     public function login(Request $request)
     {
@@ -89,6 +89,12 @@ class AuthController extends Controller
         ]);
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Check credentials
+        |--------------------------------------------------------------------------
+        */
+
         if (!Auth::attempt($credentials)) {
 
             return back()
@@ -101,32 +107,51 @@ class AuthController extends Controller
         }
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Regenerate session
+        |--------------------------------------------------------------------------
+        */
+
         $request->session()->regenerate();
 
 
         /*
         |--------------------------------------------------------------------------
-        | Admin Login Through Main Login
+        | Allow ONLY normal users
         |--------------------------------------------------------------------------
         */
 
-        if (Auth::user()->role === 'admin') {
-            return redirect()->route('admin.dashboard');
+        $user = Auth::user();
+
+
+        if ($user->role !== 'user') {
+
+            Auth::logout();
+
+            $request->session()->invalidate();
+
+            $request->session()->regenerateToken();
+
+            return back()
+                ->withErrors([
+                    'email' =>
+                        'This login is for customers only. Please use the correct login panel.',
+                ])
+                ->withInput(
+                    $request->only('email')
+                );
         }
 
-        if (Auth::user()->role === 'staff') {
-            return redirect()->route('staff.dashboard');
-        }
 
-        return redirect()->route('user.dashboard');
         /*
         |--------------------------------------------------------------------------
-        | Normal Customer
+        | Normal Customer Dashboard
         |--------------------------------------------------------------------------
         */
 
-        // return redirect()
-        //     ->route('user.dashboard');
+        return redirect()
+            ->route('user.dashboard');
     }
 
 
@@ -147,3 +172,4 @@ class AuthController extends Controller
             ->route('login');
     }
 }
+
