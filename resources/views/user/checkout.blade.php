@@ -170,6 +170,7 @@
         border-radius: 8px;
         background: var(--checkout-gold-light);
         font-size: 17px;
+        flex-shrink: 0;
     }
 
     .section-title strong {
@@ -436,6 +437,115 @@
         color: var(--checkout-red);
         font-size: 10px;
         font-weight: 700;
+    }
+
+    /* =========================================================
+       PAYMENT METHOD
+    ========================================================= */
+
+    .payment-section {
+        margin-top: 25px;
+    }
+
+    .payment-options {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .payment-option {
+        position: relative;
+    }
+
+    .payment-option input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .payment-card {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-height: 75px;
+        padding: 13px 14px;
+        border: 1px solid var(--checkout-border);
+        border-radius: 10px;
+        background: white;
+        cursor: pointer;
+        transition: .2s ease;
+    }
+
+    .payment-card:hover {
+        border-color: #c7b28f;
+        background: #fffdf9;
+    }
+
+    .payment-option input:checked + .payment-card {
+        border-color: var(--checkout-gold);
+        background: var(--checkout-gold-light);
+        box-shadow: 0 0 0 2px rgba(183,121,31,.08);
+    }
+
+    .payment-icon {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        border-radius: 9px;
+        background: #f5f5f4;
+        font-size: 19px;
+    }
+
+    .payment-option input:checked + .payment-card .payment-icon {
+        background: white;
+    }
+
+    .payment-info {
+        min-width: 0;
+    }
+
+    .payment-info strong {
+        display: block;
+        color: var(--checkout-dark);
+        font-size: 12px;
+        font-weight: 800;
+        margin-bottom: 3px;
+    }
+
+    .payment-info span {
+        display: block;
+        color: var(--checkout-muted);
+        font-size: 10px;
+        line-height: 1.4;
+    }
+
+    .payment-check {
+        margin-left: auto;
+        color: var(--checkout-gold);
+        font-size: 16px;
+        opacity: 0;
+    }
+
+    .payment-option input:checked + .payment-card .payment-check {
+        opacity: 1;
+    }
+
+    .online-payment-note {
+        display: none;
+        margin-top: 10px;
+        padding: 11px 12px;
+        border-radius: 8px;
+        background: var(--checkout-blue-light);
+        color: #1e40af;
+        font-size: 10px;
+        line-height: 1.5;
+    }
+
+    .online-payment-note.active {
+        display: block;
     }
 
     /* =========================================================
@@ -716,6 +826,10 @@
             grid-column: auto;
         }
 
+        .payment-options {
+            grid-template-columns: 1fr;
+        }
+
         .food-row {
             grid-template-columns: 52px minmax(0, 1fr) auto;
             gap: 10px;
@@ -790,7 +904,7 @@
         </h1>
 
         <p>
-            Confirm your delivery details and place your order.
+            Confirm your delivery details, choose your payment method and place your order.
         </p>
 
     </div>
@@ -1463,8 +1577,6 @@
                             </div>
 
 
-                            {{-- HIDDEN LOCATION VALUES --}}
-
                             <input
                                 type="hidden"
                                 id="latitude"
@@ -1498,6 +1610,141 @@
 
 
                         {{-- =================================================
+                             PAYMENT METHOD
+                        ================================================== --}}
+
+                        <div class="payment-section">
+
+                            <div class="section-title">
+
+                                <div class="section-title-icon">
+                                    💳
+                                </div>
+
+                                <div>
+
+                                    <strong>
+                                        Payment Method
+                                    </strong>
+
+                                    <span>
+                                        Choose how you want to pay for this order
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="payment-options">
+
+
+                                {{-- COD --}}
+
+                                <div class="payment-option">
+
+                                    <input
+                                        type="radio"
+                                        id="payment_cod"
+                                        name="payment_method"
+                                        value="cod"
+                                        {{ old('payment_method', 'cod') === 'cod' ? 'checked' : '' }}
+                                    >
+
+                                    <label
+                                        for="payment_cod"
+                                        class="payment-card"
+                                    >
+
+                                        <div class="payment-icon">
+                                            💵
+                                        </div>
+
+                                        <div class="payment-info">
+
+                                            <strong>
+                                                Cash on Delivery
+                                            </strong>
+
+                                            <span>
+                                                Pay when your order arrives.
+                                            </span>
+
+                                        </div>
+
+                                        <div class="payment-check">
+                                            ✓
+                                        </div>
+
+                                    </label>
+
+                                </div>
+
+
+                                {{-- ONLINE --}}
+
+                                <div class="payment-option">
+
+                                    <input
+                                        type="radio"
+                                        id="payment_online"
+                                        name="payment_method"
+                                        value="online"
+                                        {{ old('payment_method') === 'online' ? 'checked' : '' }}
+                                    >
+
+                                    <label
+                                        for="payment_online"
+                                        class="payment-card"
+                                    >
+
+                                        <div class="payment-icon">
+                                            💳
+                                        </div>
+
+                                        <div class="payment-info">
+
+                                            <strong>
+                                                Online Payment
+                                            </strong>
+
+                                            <span>
+                                                Pay securely using Cashfree.
+                                            </span>
+
+                                        </div>
+
+                                        <div class="payment-check">
+                                            ✓
+                                        </div>
+
+                                    </label>
+
+                                </div>
+
+                            </div>
+
+
+                            <div
+                                id="onlinePaymentNote"
+                                class="online-payment-note"
+                            >
+                                🔒 You will be redirected to the secure Cashfree payment page after your order is created.
+                            </div>
+
+
+                            @error('payment_method')
+
+                                <div class="field-error">
+                                    {{ $message }}
+                                </div>
+
+                            @enderror
+
+                        </div>
+
+
+                        {{-- =================================================
                              COMBINED ADDRESS
                         ================================================== --}}
 
@@ -1524,8 +1771,8 @@
 
                         <div class="secure-note">
 
-                            🔒 Your address, mobile number and delivery
-                            location are securely submitted.
+                            🔒 Your address, mobile number and payment
+                            information are securely processed.
 
                         </div>
 
@@ -1595,8 +1842,6 @@
 
             <div class="box-body">
 
-
-                {{-- CART ITEMS --}}
 
                 @foreach($cartItems as $item)
 
@@ -1690,8 +1935,6 @@
                 @endforeach
 
 
-                {{-- SUMMARY --}}
-
                 <div class="summary-divider"></div>
 
 
@@ -1755,10 +1998,6 @@
 </div>
 
 
-{{-- =========================================================
-     JAVASCRIPT
-========================================================= --}}
-
 <script>
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -1769,15 +2008,20 @@ document.addEventListener('DOMContentLoaded', function () {
     |--------------------------------------------------------------------------
     */
 
-    const form = document.getElementById('checkoutForm');
+    const form =
+        document.getElementById('checkoutForm');
 
-    const phone = document.getElementById('phone');
+    const phone =
+        document.getElementById('phone');
 
-    const phoneCount = document.getElementById('phoneCount');
+    const phoneCount =
+        document.getElementById('phoneCount');
 
-    const locationBtn = document.getElementById('locationBtn');
+    const locationBtn =
+        document.getElementById('locationBtn');
 
-    const locationStatus = document.getElementById('locationStatus');
+    const locationStatus =
+        document.getElementById('locationStatus');
 
     const locationStatusText =
         document.getElementById('locationStatusText');
@@ -1808,6 +2052,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const address =
         document.getElementById('address');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | PAYMENT ELEMENTS
+    |--------------------------------------------------------------------------
+    */
+
+    const paymentOptions =
+        document.querySelectorAll(
+            'input[name="payment_method"]'
+        );
+
+    const onlinePaymentNote =
+        document.getElementById(
+            'onlinePaymentNote'
+        );
 
 
     /*
@@ -1849,7 +2110,57 @@ document.addEventListener('DOMContentLoaded', function () {
 
     /*
     |--------------------------------------------------------------------------
-    | PHONE — EXACTLY 10 DIGITS
+    | PAYMENT METHOD UI
+    |--------------------------------------------------------------------------
+    */
+
+    function updatePaymentUI() {
+
+        const selected =
+            document.querySelector(
+                'input[name="payment_method"]:checked'
+            );
+
+        if (
+            selected &&
+            selected.value === 'online'
+        ) {
+
+            onlinePaymentNote.classList.add(
+                'active'
+            );
+
+            placeOrderBtn.textContent =
+                'Continue to Secure Payment →';
+
+        } else {
+
+            onlinePaymentNote.classList.remove(
+                'active'
+            );
+
+            placeOrderBtn.textContent =
+                'Place Order →';
+        }
+    }
+
+
+    paymentOptions.forEach(function (radio) {
+
+        radio.addEventListener(
+            'change',
+            updatePaymentUI
+        );
+
+    });
+
+
+    updatePaymentUI();
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | PHONE
     |--------------------------------------------------------------------------
     */
 
@@ -1878,12 +2189,13 @@ document.addEventListener('DOMContentLoaded', function () {
         updatePhoneCounter
     );
 
+
     updatePhoneCounter();
 
 
     /*
     |--------------------------------------------------------------------------
-    | PIN CODE — ONLY 6 DIGITS
+    | PIN CODE
     |--------------------------------------------------------------------------
     */
 
@@ -1896,7 +2208,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     .replace(/\D/g, '')
                     .substring(0, 6);
 
-            this.classList.remove('invalid');
+            this.classList.remove(
+                'invalid'
+            );
 
         }
     );
@@ -1904,18 +2218,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
     /*
     |--------------------------------------------------------------------------
-    | SET LOCATION STATUS
+    | LOCATION STATUS
     |--------------------------------------------------------------------------
     */
 
-    function setLocationStatus(type, message) {
+    function setLocationStatus(
+        type,
+        message
+    ) {
 
         locationStatus.className =
             'location-status';
 
         if (type) {
 
-            locationStatus.classList.add(type);
+            locationStatus.classList.add(
+                type
+            );
 
         }
 
@@ -2125,7 +2444,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     /*
     |--------------------------------------------------------------------------
-    | EXISTING OLD LOCATION
+    | EXISTING LOCATION
     |--------------------------------------------------------------------------
     */
 
@@ -2142,10 +2461,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
         latitudeDisplay.textContent =
-            parseFloat(latitude.value).toFixed(6);
+            parseFloat(
+                latitude.value
+            ).toFixed(6);
 
         longitudeDisplay.textContent =
-            parseFloat(longitude.value).toFixed(6);
+            parseFloat(
+                longitude.value
+            ).toFixed(6);
 
 
         setLocationStatus(
@@ -2164,15 +2487,12 @@ document.addEventListener('DOMContentLoaded', function () {
     |--------------------------------------------------------------------------
     | BUILD COMPLETE ADDRESS
     |--------------------------------------------------------------------------
-    |
-    | Your existing orders table can continue using the single
-    | "address" column.
-    |
     */
 
     function buildCompleteAddress() {
 
         const parts = [];
+
 
         if (houseNo.value.trim()) {
 
@@ -2183,6 +2503,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         }
 
+
         if (street.value.trim()) {
 
             parts.push(
@@ -2191,6 +2512,7 @@ document.addEventListener('DOMContentLoaded', function () {
             );
 
         }
+
 
         if (townVillage.value.trim()) {
 
@@ -2201,6 +2523,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         }
 
+
         if (postOffice.value.trim()) {
 
             parts.push(
@@ -2209,6 +2532,7 @@ document.addEventListener('DOMContentLoaded', function () {
             );
 
         }
+
 
         if (policeStation.value.trim()) {
 
@@ -2219,6 +2543,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         }
 
+
         if (cityDistrict.value.trim()) {
 
             parts.push(
@@ -2227,6 +2552,7 @@ document.addEventListener('DOMContentLoaded', function () {
             );
 
         }
+
 
         if (state.value.trim()) {
 
@@ -2237,6 +2563,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         }
 
+
         if (pincode.value.trim()) {
 
             parts.push(
@@ -2245,6 +2572,7 @@ document.addEventListener('DOMContentLoaded', function () {
             );
 
         }
+
 
         if (landmark.value.trim()) {
 
@@ -2255,6 +2583,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         }
 
+
         if (deliveryNote.value.trim()) {
 
             parts.push(
@@ -2264,6 +2593,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         }
 
+
         address.value =
             parts.join(', ');
 
@@ -2272,11 +2602,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     /*
     |--------------------------------------------------------------------------
-    | REMOVE FIELD ERROR WHILE TYPING
+    | REMOVE FIELD ERROR
     |--------------------------------------------------------------------------
     */
 
     const addressFields = [
+
         houseNo,
         street,
         townVillage,
@@ -2286,6 +2617,7 @@ document.addEventListener('DOMContentLoaded', function () {
         state,
         pincode,
         landmark
+
     ];
 
 
@@ -2295,7 +2627,9 @@ document.addEventListener('DOMContentLoaded', function () {
             'input',
             function () {
 
-                this.classList.remove('invalid');
+                this.classList.remove(
+                    'invalid'
+                );
 
             }
         );
@@ -2353,7 +2687,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             /*
             |--------------------------------------------------------------
-            | PIN CODE
+            | PIN
             |--------------------------------------------------------------
             */
 
@@ -2387,7 +2721,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             /*
             |--------------------------------------------------------------
-            | REQUIRED ADDRESS FIELDS
+            | ADDRESS
             |--------------------------------------------------------------
             */
 
@@ -2454,6 +2788,31 @@ document.addEventListener('DOMContentLoaded', function () {
 
             /*
             |--------------------------------------------------------------
+            | PAYMENT METHOD
+            |--------------------------------------------------------------
+            */
+
+            const selectedPayment =
+                document.querySelector(
+                    'input[name="payment_method"]:checked'
+                );
+
+
+            if (!selectedPayment) {
+
+                event.preventDefault();
+
+                alert(
+                    'Please select a payment method.'
+                );
+
+                return;
+
+            }
+
+
+            /*
+            |--------------------------------------------------------------
             | LIVE LOCATION
             |--------------------------------------------------------------
             */
@@ -2491,8 +2850,20 @@ document.addEventListener('DOMContentLoaded', function () {
             placeOrderBtn.disabled =
                 true;
 
-            placeOrderBtn.textContent =
-                'Placing Order...';
+
+            if (
+                selectedPayment.value === 'online'
+            ) {
+
+                placeOrderBtn.textContent =
+                    'Creating Secure Payment...';
+
+            } else {
+
+                placeOrderBtn.textContent =
+                    'Placing Order...';
+
+            }
 
         }
     );

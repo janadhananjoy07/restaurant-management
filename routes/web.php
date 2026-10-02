@@ -15,6 +15,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\StaffAuthController;
 use App\Http\Controllers\StaffController;
+use App\Http\Controllers\PaymentController;
 
 use App\Http\Controllers\Admin\MenuItemController;
 use App\Http\Controllers\Admin\FeedbackController as AdminFeedbackController;
@@ -41,7 +42,6 @@ use App\Http\Middleware\StaffMiddleware;
 |--------------------------------------------------------------------------
 */
 
-
 Route::get('/', function () {
     return view('welcome');
 })->name('home');
@@ -53,30 +53,25 @@ Route::get('/', function () {
 |--------------------------------------------------------------------------
 */
 
-
 Route::get('/register', [
     AuthController::class,
     'showRegister'
 ])->name('register');
-
 
 Route::post('/register', [
     AuthController::class,
     'register'
 ])->name('register.store');
 
-
 Route::get('/login', [
     AuthController::class,
     'showLogin'
 ])->name('login');
 
-
 Route::post('/login', [
     AuthController::class,
     'login'
 ])->name('login.store');
-
 
 Route::post('/logout', [
     AuthController::class,
@@ -88,19 +83,13 @@ Route::post('/logout', [
 |--------------------------------------------------------------------------
 | STAFF AUTHENTICATION
 |--------------------------------------------------------------------------
-| Staff registration/login are public.
-|
-| IMPORTANT:
-| There must be only ONE copy of these routes.
-|--------------------------------------------------------------------------
 */
-
 
 Route::prefix('staff')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Staff Registration
+    | STAFF REGISTRATION
     |--------------------------------------------------------------------------
     */
 
@@ -108,7 +97,6 @@ Route::prefix('staff')->group(function () {
         StaffAuthController::class,
         'showRegister'
     ])->name('staff.register');
-
 
     Route::post('/register', [
         StaffAuthController::class,
@@ -118,7 +106,7 @@ Route::prefix('staff')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Staff Login
+    | STAFF LOGIN
     |--------------------------------------------------------------------------
     */
 
@@ -126,7 +114,6 @@ Route::prefix('staff')->group(function () {
         StaffAuthController::class,
         'showLogin'
     ])->name('staff.login');
-
 
     Route::post('/login', [
         StaffAuthController::class,
@@ -136,7 +123,7 @@ Route::prefix('staff')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Staff Logout
+    | STAFF LOGOUT
     |--------------------------------------------------------------------------
     */
 
@@ -151,24 +138,17 @@ Route::prefix('staff')->group(function () {
 |--------------------------------------------------------------------------
 | ADMIN AUTHENTICATION
 |--------------------------------------------------------------------------
-| Admin registration is intentionally disabled.
-|
-| The first admin is created by the developer/seeder.
-|--------------------------------------------------------------------------
 */
-
 
 Route::get('/admin/login', [
     AdminAuthController::class,
     'showLogin'
 ])->name('admin.login');
 
-
 Route::post('/admin/login', [
     AdminAuthController::class,
     'login'
 ])->name('admin.login.store');
-
 
 Route::post('/admin/logout', [
     AdminAuthController::class,
@@ -180,16 +160,7 @@ Route::post('/admin/logout', [
 |--------------------------------------------------------------------------
 | PROTECTED ADMIN ROUTES
 |--------------------------------------------------------------------------
-|
-| Only admin users can access these routes.
-|
-| IMPORTANT:
-| Admin can manage/view staff requests.
-| Admin does NOT assign orders to staff.
-| Staff claim their own orders.
-|--------------------------------------------------------------------------
 */
-
 
 Route::middleware([AdminMiddleware::class])
     ->prefix('admin')
@@ -218,24 +189,20 @@ Route::middleware([AdminMiddleware::class])
             'index'
         ])->name('admin.staff-requests.index');
 
-
         Route::put('/staff-requests/{id}/approve', [
             StaffRequestController::class,
             'approve'
         ])->name('admin.staff-requests.approve');
-
 
         Route::put('/staff-requests/{id}/reject', [
             StaffRequestController::class,
             'reject'
         ])->name('admin.staff-requests.reject');
 
-
         Route::put('/staff-requests/{id}/suspend', [
             StaffRequestController::class,
             'suspend'
         ])->name('admin.staff-requests.suspend');
-
 
         Route::put('/staff-requests/{id}/reactivate', [
             StaffRequestController::class,
@@ -254,30 +221,25 @@ Route::middleware([AdminMiddleware::class])
             'index'
         ])->name('admin.menu');
 
-
         Route::get('/menu/create', [
             MenuItemController::class,
             'create'
         ])->name('admin.menu.create');
-
 
         Route::post('/menu', [
             MenuItemController::class,
             'store'
         ])->name('admin.menu.store');
 
-
         Route::get('/menu/{id}/edit', [
             MenuItemController::class,
             'edit'
         ])->name('admin.menu.edit');
 
-
         Route::put('/menu/{id}', [
             MenuItemController::class,
             'update'
         ])->name('admin.menu.update');
-
 
         Route::delete('/menu/{id}', [
             MenuItemController::class,
@@ -296,13 +258,6 @@ Route::middleware([AdminMiddleware::class])
             'adminOrders'
         ])->name('admin.orders');
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | ADMIN ORDER STATUS
-        |--------------------------------------------------------------------------
-        */
-
         Route::put('/orders/{id}/status', [
             OrderController::class,
             'updateStatus'
@@ -319,7 +274,6 @@ Route::middleware([AdminMiddleware::class])
             UserController::class,
             'adminReservations'
         ])->name('admin.reservations');
-
 
         Route::put('/reservations/{id}/status', [
             UserController::class,
@@ -338,7 +292,6 @@ Route::middleware([AdminMiddleware::class])
             'index'
         ])->name('admin.feedback.index');
 
-
         Route::patch('/feedback/{id}/status', [
             AdminFeedbackController::class,
             'updateStatus'
@@ -351,21 +304,20 @@ Route::middleware([AdminMiddleware::class])
 | PROTECTED STAFF ROUTES
 |--------------------------------------------------------------------------
 |
-| Only approved staff can access these routes.
-|
 | IMPORTANT:
 | There is ONLY ONE staff protected group.
 |
-| Staff:
-| - See available/current orders
-| - Claim unassigned orders
-| - Update orders assigned to themselves
-| - See previous orders they delivered
+| Staff can:
+| - See available orders
+| - Claim orders
+| - Update their own orders
+| - Collect cash
+| - Collect UPI
+| - Start Cashfree online payment during delivery
+| - Complete delivered orders
 |
-| Admin does NOT assign orders.
 |--------------------------------------------------------------------------
 */
-
 
 Route::middleware([StaffMiddleware::class])
     ->prefix('staff')
@@ -387,15 +339,6 @@ Route::middleware([StaffMiddleware::class])
         |--------------------------------------------------------------------------
         | STAFF ORDERS
         |--------------------------------------------------------------------------
-        |
-        | This uses the same dashboard method because your current
-        | StaffController::dashboard() loads:
-        |
-        | - activeOrders
-        | - previousOrders
-        | - counts
-        |
-        |--------------------------------------------------------------------------
         */
 
         Route::get('/orders', [
@@ -408,11 +351,6 @@ Route::middleware([StaffMiddleware::class])
         |--------------------------------------------------------------------------
         | CLAIM ORDER
         |--------------------------------------------------------------------------
-        |
-        | Staff claims an unassigned order.
-        |
-        | POST /staff/orders/{id}/claim
-        |--------------------------------------------------------------------------
         */
 
         Route::post('/orders/{id}/claim', [
@@ -423,13 +361,27 @@ Route::middleware([StaffMiddleware::class])
 
         /*
         |--------------------------------------------------------------------------
-        | UPDATE ORDER STATUS
+        | ONLINE PAYMENT DURING DELIVERY
         |--------------------------------------------------------------------------
         |
-        | PUT /staff/orders/{id}/status
+        | Example:
         |
-        | The {id} is replaced by the real order ID when Blade generates
-        | the URL.
+        | /staff/orders/25/payment/online
+        |
+        | This opens Cashfree checkout for the delivery partner.
+        |
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get('/orders/{id}/payment/online', [
+            PaymentController::class,
+            'staffOnlinePayment'
+        ])->name('staff.payment.online');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | UPDATE ORDER STATUS
         |--------------------------------------------------------------------------
         */
 
@@ -445,7 +397,6 @@ Route::middleware([StaffMiddleware::class])
 | PROTECTED CUSTOMER ROUTES
 |--------------------------------------------------------------------------
 */
-
 
 Route::middleware([AuthMiddleware::class])
     ->prefix('user')
@@ -486,18 +437,15 @@ Route::middleware([AuthMiddleware::class])
             'index'
         ])->name('user.cart');
 
-
         Route::post('/cart/{id}', [
             CartController::class,
             'add'
         ])->name('user.cart.add');
 
-
         Route::put('/cart/{id}', [
             CartController::class,
             'update'
         ])->name('user.cart.update');
-
 
         Route::delete('/cart/{id}', [
             CartController::class,
@@ -552,7 +500,6 @@ Route::middleware([AuthMiddleware::class])
             'profile'
         ])->name('user.profile');
 
-
         Route::put('/profile', [
             UserController::class,
             'updateProfile'
@@ -569,7 +516,6 @@ Route::middleware([AuthMiddleware::class])
             UserController::class,
             'showBookTable'
         ])->name('user.book-table');
-
 
         Route::post('/book-table', [
             UserController::class,
@@ -588,7 +534,6 @@ Route::middleware([AuthMiddleware::class])
             'reservations'
         ])->name('user.reservations');
 
-
         Route::put('/reservations/{id}/cancel', [
             UserController::class,
             'cancelReservation'
@@ -600,11 +545,7 @@ Route::middleware([AuthMiddleware::class])
 |--------------------------------------------------------------------------
 | CUSTOMER FEEDBACK
 |--------------------------------------------------------------------------
-|
-| Logged-in customers can submit feedback for their orders.
-|--------------------------------------------------------------------------
 */
-
 
 Route::middleware([AuthMiddleware::class])
     ->group(function () {
@@ -614,12 +555,10 @@ Route::middleware([AuthMiddleware::class])
             'index'
         ])->name('feedback');
 
-
         Route::post('/feedback', [
             FeedbackController::class,
             'store'
         ])->name('feedback.store');
-
 
         Route::post('/feedback/{order}/dismiss', [
             FeedbackController::class,
@@ -634,9 +573,54 @@ Route::middleware([AuthMiddleware::class])
 |--------------------------------------------------------------------------
 */
 
-
 Route::get('/reviews', [
     ReviewsController::class,
     'index'
 ])->name('reviews.index');
+
+
+/*
+|--------------------------------------------------------------------------
+| CUSTOMER CASHFREE PAYMENT
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware([AuthMiddleware::class])
+    ->group(function () {
+
+        /*
+        |--------------------------------------------------------------------------
+        | CREATE CUSTOMER ONLINE PAYMENT
+        |--------------------------------------------------------------------------
+        */
+
+        Route::post('/payment/cashfree/create', [
+            PaymentController::class,
+            'create'
+        ])->name('payment.cashfree.create');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | CASHFREE RETURN
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get('/payment/cashfree/return', [
+            PaymentController::class,
+            'return'
+        ])->name('payment.cashfree.return');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | CASHFREE WEBHOOK
+        |--------------------------------------------------------------------------
+        */
+
+        Route::post('/payment/cashfree/webhook', [
+            PaymentController::class,
+            'webhook'
+        ])->name('payment.cashfree.webhook');
+    });
 

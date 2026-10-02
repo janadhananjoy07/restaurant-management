@@ -35,4 +35,29 @@ return [
         ],
     ],
 
+
+
+
+'cashfree' => [
+
+    'environment' => env(
+        'CASHFREE_ENVIRONMENT',
+        'sandbox'
+    ),
+
+    'client_id' => env(
+        'CASHFREE_CLIENT_ID'
+    ),
+
+    'client_secret' => env(
+        'CASHFREE_CLIENT_SECRET'
+    ),
+
+    'api_version' => env(
+        'CASHFREE_API_VERSION',
+        '2025-01-01'
+    ),
+
+],
+
 ];

@@ -46,10 +46,31 @@ class OrderController extends Controller
     |--------------------------------------------------------------------------
     | USER - PLACE ORDER
     |--------------------------------------------------------------------------
+    |
+    | COD:
+    |   Checkout
+    |   -> Create order
+    |   -> payment_status = pending
+    |   -> Orders
+    |
+    | ONLINE:
+    |   Checkout
+    |   -> Create order
+    |   -> payment_status = pending
+    |   -> Intermediate POST form
+    |   -> PaymentController@create
+    |   -> Cashfree
+    |
     */
 
     public function placeOrder(Request $request)
     {
+        /*
+        |--------------------------------------------------------------------------
+        | VALIDATE CHECKOUT
+        |--------------------------------------------------------------------------
+        */
+
         $validated = $request->validate([
             'address' => [
                 'required',
@@ -62,12 +83,37 @@ class OrderController extends Controller
                 'string',
                 'max:20',
             ],
+
+            'payment_method' => [
+                'required',
+                'in:cod,online',
+            ],
         ], [
-            'address.required' => 'Please enter your delivery address.',
-            'address.max' => 'Delivery address cannot exceed 500 characters.',
-            'phone.required' => 'Please enter your phone number.',
-            'phone.max' => 'Phone number cannot exceed 20 characters.',
+            'address.required' =>
+                'Please enter your delivery address.',
+
+            'address.max' =>
+                'Delivery address cannot exceed 500 characters.',
+
+            'phone.required' =>
+                'Please enter your phone number.',
+
+            'phone.max' =>
+                'Phone number cannot exceed 20 characters.',
+
+            'payment_method.required' =>
+                'Please select a payment method.',
+
+            'payment_method.in' =>
+                'Invalid payment method selected.',
         ]);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | GET CURRENT USER CART
+        |--------------------------------------------------------------------------
+        */
 
         $cartItems = CartItem::with('menuItem')
             ->where('user_id', auth()->id())
@@ -76,47 +122,132 @@ class OrderController extends Controller
         if ($cartItems->isEmpty()) {
             return redirect()
                 ->route('user.cart')
-                ->with('error', 'Your cart is empty.');
+                ->with(
+                    'error',
+                    'Your cart is empty.'
+                );
         }
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | CALCULATE TOTAL
+        |--------------------------------------------------------------------------
+        */
+
         $total = $cartItems->sum(function ($item) {
-            return (float) $item->price * (int) $item->quantity;
+            return (float) $item->price
+                * (int) $item->quantity;
         });
 
-        DB::transaction(function () use (
+
+        /*
+        |--------------------------------------------------------------------------
+        | CREATE ORDER
+        |--------------------------------------------------------------------------
+        */
+
+        $order = DB::transaction(function () use (
             $cartItems,
             $total,
             $validated
         ) {
+
             $order = Order::create([
                 'user_id' => auth()->id(),
+
                 'total_amount' => $total,
+
                 'status' => 'pending',
+
+                'payment_status' => 'pending',
+
                 'address' => $validated['address'],
+
                 'phone' => $validated['phone'],
             ]);
 
+
+            /*
+            |--------------------------------------------------------------------------
+            | CREATE ORDER ITEMS
+            |--------------------------------------------------------------------------
+            */
+
             foreach ($cartItems as $cartItem) {
+
                 OrderItem::create([
                     'order_id' => $order->id,
+
                     'menu_item_id' => $cartItem->menu_item_id,
+
                     'quantity' => $cartItem->quantity,
+
                     'price' => $cartItem->price,
                 ]);
             }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | CLEAR CART
+            |--------------------------------------------------------------------------
+            */
 
             CartItem::where(
                 'user_id',
                 auth()->id()
             )->delete();
+
+
+            return $order;
         });
 
-        return redirect()
-            ->route('user.orders')
-            ->with(
-                'success',
-                'Your order has been placed successfully!'
-            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | CASH ON DELIVERY
+        |--------------------------------------------------------------------------
+        */
+
+        if ($validated['payment_method'] === 'cod') {
+
+            $order->update([
+                'payment_status' => 'pending',
+            ]);
+
+            return redirect()
+                ->route('user.orders')
+                ->with(
+                    'success',
+                    'Order #' . $order->id .
+                    ' placed successfully. Pay when your order is delivered.'
+                );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | ONLINE PAYMENT
+        |--------------------------------------------------------------------------
+        |
+        | IMPORTANT:
+        |
+        | Do NOT use redirect()->route() here.
+        |
+        | payment.cashfree.create accepts POST only.
+        |
+        | We therefore show an intermediate page which automatically
+        | submits a POST request to PaymentController@create.
+        |
+        */
+
+        return view(
+            'payment.cashfree-redirect',
+            [
+                'order' => $order,
+            ]
+        );
     }
 
 
@@ -131,7 +262,10 @@ class OrderController extends Controller
         $orders = Order::with([
             'items.menuItem',
         ])
-            ->where('user_id', auth()->id())
+            ->where(
+                'user_id',
+                auth()->id()
+            )
             ->latest()
             ->get();
 
@@ -283,6 +417,12 @@ class OrderController extends Controller
             ->get();
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | ADMIN DASHBOARD VIEW
+        |--------------------------------------------------------------------------
+        */
+
         return view(
             'admin.dashboard',
             compact(
@@ -323,12 +463,6 @@ class OrderController extends Controller
 
     public function adminOrders(Request $request)
     {
-        /*
-        |--------------------------------------------------------------------------
-        | ALLOWED FILTER VALUES
-        |--------------------------------------------------------------------------
-        */
-
         $allowedStatuses = [
             'pending',
             'confirmed',
@@ -350,14 +484,6 @@ class OrderController extends Controller
         |--------------------------------------------------------------------------
         | FILTER INPUT
         |--------------------------------------------------------------------------
-        |
-        | Important:
-        | Laravel's ConvertEmptyStringsToNull middleware converts
-        | empty form values into NULL.
-        |
-        | We normalize everything back to strings before checking
-        | whether the value is empty.
-        |
         */
 
         $search = trim(
@@ -383,7 +509,7 @@ class OrderController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | NORMALIZE INVALID FILTER VALUES
+        | NORMALIZE FILTERS
         |--------------------------------------------------------------------------
         */
 
@@ -398,36 +524,65 @@ class OrderController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | VALIDATE DATE FILTERS
+        | VALIDATE DATE FROM
         |--------------------------------------------------------------------------
         */
 
         if ($dateFrom !== '') {
+
             $fromDate = \DateTime::createFromFormat(
                 'Y-m-d',
                 $dateFrom
             );
 
-            $isValidFromDate = $fromDate
-                && $fromDate->format('Y-m-d') === $dateFrom;
+            $isValidFromDate =
+                $fromDate &&
+                $fromDate->format('Y-m-d') === $dateFrom;
 
             if (!$isValidFromDate) {
                 $dateFrom = '';
             }
         }
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | VALIDATE DATE TO
+        |--------------------------------------------------------------------------
+        */
+
         if ($dateTo !== '') {
+
             $toDate = \DateTime::createFromFormat(
                 'Y-m-d',
                 $dateTo
             );
 
-            $isValidToDate = $toDate
-                && $toDate->format('Y-m-d') === $dateTo;
+            $isValidToDate =
+                $toDate &&
+                $toDate->format('Y-m-d') === $dateTo;
 
             if (!$isValidToDate) {
                 $dateTo = '';
             }
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | SWAP INVALID DATE RANGE
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $dateFrom !== '' &&
+            $dateTo !== '' &&
+            $dateFrom > $dateTo
+        ) {
+            [$dateFrom, $dateTo] = [
+                $dateTo,
+                $dateFrom,
+            ];
         }
 
 
@@ -445,48 +600,33 @@ class OrderController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | SEARCH FILTER
+        | SEARCH
         |--------------------------------------------------------------------------
-        |
-        | Search by:
-        |
-        | - Order ID
-        | - Customer name
-        | - Customer email
-        | - Phone number
-        |
         */
 
         if ($search !== '') {
+
             $query->where(function ($orderQuery) use ($search) {
 
                 /*
-                |--------------------------------------------------------------------------
+                |--------------------------------------------------------------
                 | ORDER ID
-                |--------------------------------------------------------------------------
+                |--------------------------------------------------------------
                 */
 
                 if (is_numeric($search)) {
+
                     $orderQuery->where(
                         'id',
                         (int) $search
-                    );
-                } else {
-                    /*
-                    |--------------------------------------------------------------
-                    | If search is not numeric, don't add an invalid ID condition.
-                    |--------------------------------------------------------------
-                    */
-                    $orderQuery->whereRaw(
-                        '1 = 0'
                     );
                 }
 
 
                 /*
-                |--------------------------------------------------------------------------
-                | CUSTOMER NAME / EMAIL
-                |--------------------------------------------------------------------------
+                |--------------------------------------------------------------
+                | CUSTOMER
+                |--------------------------------------------------------------
                 */
 
                 $orderQuery->orWhereHas(
@@ -509,9 +649,9 @@ class OrderController extends Controller
 
 
                 /*
-                |--------------------------------------------------------------------------
+                |--------------------------------------------------------------
                 | PHONE
-                |--------------------------------------------------------------------------
+                |--------------------------------------------------------------
                 */
 
                 $orderQuery->orWhere(
@@ -530,6 +670,7 @@ class OrderController extends Controller
         */
 
         if ($status !== '') {
+
             $query->where(
                 'status',
                 $status
@@ -539,11 +680,12 @@ class OrderController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | DATE FROM FILTER
+        | DATE FROM
         |--------------------------------------------------------------------------
         */
 
         if ($dateFrom !== '') {
+
             $query->whereDate(
                 'created_at',
                 '>=',
@@ -554,133 +696,17 @@ class OrderController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | DATE TO FILTER
+        | DATE TO
         |--------------------------------------------------------------------------
         */
 
         if ($dateTo !== '') {
+
             $query->whereDate(
                 'created_at',
                 '<=',
                 $dateTo
             );
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | DATE RANGE SAFETY
-        |--------------------------------------------------------------------------
-        |
-        | If both dates exist but date_from is after date_to,
-        | don't generate an invalid/empty filter combination.
-        |
-        */
-
-        if (
-            $dateFrom !== '' &&
-            $dateTo !== '' &&
-            $dateFrom > $dateTo
-        ) {
-            /*
-            |--------------------------------------------------------------
-            | Swap the dates automatically.
-            |--------------------------------------------------------------
-            */
-
-            [$dateFrom, $dateTo] = [
-                $dateTo,
-                $dateFrom,
-            ];
-
-            /*
-            |--------------------------------------------------------------
-            | Rebuild query because the previous date conditions
-            | were based on the old order.
-            |--------------------------------------------------------------
-            */
-
-            $query = Order::with([
-                'user',
-                'items.menuItem',
-            ]);
-
-            /*
-            |--------------------------------------------------------------
-            | Re-apply search
-            |--------------------------------------------------------------
-            */
-
-            if ($search !== '') {
-                $query->where(function ($orderQuery) use ($search) {
-
-                    if (is_numeric($search)) {
-                        $orderQuery->where(
-                            'id',
-                            (int) $search
-                        );
-                    } else {
-                        $orderQuery->whereRaw(
-                            '1 = 0'
-                        );
-                    }
-
-                    $orderQuery->orWhereHas(
-                        'user',
-                        function ($userQuery) use ($search) {
-
-                            $userQuery
-                                ->where(
-                                    'name',
-                                    'like',
-                                    '%' . $search . '%'
-                                )
-                                ->orWhere(
-                                    'email',
-                                    'like',
-                                    '%' . $search . '%'
-                                );
-                        }
-                    );
-
-                    $orderQuery->orWhere(
-                        'phone',
-                        'like',
-                        '%' . $search . '%'
-                    );
-                });
-            }
-
-            /*
-            |--------------------------------------------------------------
-            | Re-apply status
-            |--------------------------------------------------------------
-            */
-
-            if ($status !== '') {
-                $query->where(
-                    'status',
-                    $status
-                );
-            }
-
-            /*
-            |--------------------------------------------------------------
-            | Re-apply corrected date range
-            |--------------------------------------------------------------
-            */
-
-            $query
-                ->whereDate(
-                    'created_at',
-                    '>=',
-                    $dateFrom
-                )
-                ->whereDate(
-                    'created_at',
-                    '<=',
-                    $dateTo
-                );
         }
 
 
@@ -695,8 +721,14 @@ class OrderController extends Controller
             case 'oldest':
 
                 $query
-                    ->orderBy('created_at', 'asc')
-                    ->orderBy('id', 'asc');
+                    ->orderBy(
+                        'created_at',
+                        'asc'
+                    )
+                    ->orderBy(
+                        'id',
+                        'asc'
+                    );
 
                 break;
 
@@ -704,8 +736,12 @@ class OrderController extends Controller
             case 'amount_high':
 
                 $query
-                    ->orderByDesc('total_amount')
-                    ->orderByDesc('id');
+                    ->orderByDesc(
+                        'total_amount'
+                    )
+                    ->orderByDesc(
+                        'id'
+                    );
 
                 break;
 
@@ -713,8 +749,13 @@ class OrderController extends Controller
             case 'amount_low':
 
                 $query
-                    ->orderBy('total_amount', 'asc')
-                    ->orderByDesc('id');
+                    ->orderBy(
+                        'total_amount',
+                        'asc'
+                    )
+                    ->orderByDesc(
+                        'id'
+                    );
 
                 break;
 
@@ -726,8 +767,12 @@ class OrderController extends Controller
                 $sort = 'latest';
 
                 $query
-                    ->orderByDesc('created_at')
-                    ->orderByDesc('id');
+                    ->orderByDesc(
+                        'created_at'
+                    )
+                    ->orderByDesc(
+                        'id'
+                    );
 
                 break;
         }
@@ -737,12 +782,6 @@ class OrderController extends Controller
         |--------------------------------------------------------------------------
         | PAGINATION
         |--------------------------------------------------------------------------
-        |
-        | 10 orders per page.
-        |
-        | withQueryString() keeps all filter values
-        | when moving between pages.
-        |
         */
 
         $orders = $query
@@ -752,7 +791,7 @@ class OrderController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | GLOBAL SUMMARY STATISTICS
+        | GLOBAL SUMMARY
         |--------------------------------------------------------------------------
         */
 
@@ -791,7 +830,7 @@ class OrderController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | FILTERED ORDER COUNT
+        | FILTERED COUNT
         |--------------------------------------------------------------------------
         */
 
@@ -800,7 +839,7 @@ class OrderController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | VIEW
+        | ADMIN ORDERS VIEW
         |--------------------------------------------------------------------------
         */
 
@@ -845,15 +884,21 @@ class OrderController extends Controller
                 'in:pending,confirmed,preparing,out_for_delivery,completed,cancelled',
             ],
         ], [
-            'status.required' => 'Please select an order status.',
-            'status.in' => 'The selected order status is invalid.',
+            'status.required' =>
+                'Please select an order status.',
+
+            'status.in' =>
+                'The selected order status is invalid.',
         ]);
+
 
         $order = Order::findOrFail($id);
 
-        $order->status = $validated['status'];
 
-        $order->save();
+        $order->update([
+            'status' => $validated['status'],
+        ]);
+
 
         return redirect()
             ->route('admin.orders')
