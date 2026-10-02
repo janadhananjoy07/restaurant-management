@@ -236,7 +236,7 @@
         document.addEventListener('DOMContentLoaded', function () {
 
             const cashfree = Cashfree({
-                mode: "{{ config('services.cashfree.environment', 'sandbox') }}"
+                mode: "{{ config('services.cashfree.environment', 'production') }}"
             });
 
             const paymentSessionId = @json($paymentSessionId);
@@ -331,7 +331,7 @@
         document.addEventListener('DOMContentLoaded', function () {
 
             const cashfree = Cashfree({
-                mode: "{{ config('services.cashfree.environment', 'sandbox') }}"
+                mode: "{{ config('services.cashfree.environment', 'production') }}"
             });
 
             const paymentSessionId =

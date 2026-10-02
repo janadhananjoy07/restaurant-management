@@ -264,7 +264,7 @@
 <script>
 
     const cashfree = Cashfree({
-        mode: "sandbox"
+        mode: "production"
     });
 
     const payButton =
