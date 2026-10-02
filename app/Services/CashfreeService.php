@@ -14,15 +14,13 @@ class CashfreeService
 
     public function __construct()
     {
-        $this->clientId =
-            (string) config(
-                'services.cashfree.client_id'
-            );
+        $this->clientId = trim(
+            (string) config('services.cashfree.client_id')
+        );
 
-        $this->clientSecret =
-            (string) config(
-                'services.cashfree.client_secret'
-            );
+        $this->clientSecret = trim(
+            (string) config('services.cashfree.client_secret')
+        );
 
         $this->apiVersion =
             (string) config(
@@ -35,8 +33,8 @@ class CashfreeService
                 'services.cashfree.environment',
                 'sandbox'
             ) === 'production'
-                ? 'https://api.cashfree.com/pg'
-                : 'https://sandbox.cashfree.com/pg';
+            ? 'https://api.cashfree.com/pg'
+            : 'https://sandbox.cashfree.com/pg';
 
         if (
             $this->clientId === '' ||
@@ -95,57 +93,48 @@ class CashfreeService
         */
 
         $response = Http::withHeaders([
-            'x-client-id' =>
-                $this->clientId,
-
-            'x-client-secret' =>
-                $this->clientSecret,
-
-            'x-api-version' =>
-                $this->apiVersion,
-
-            'Accept' =>
-                'application/json',
-
-            'Content-Type' =>
-                'application/json',
+            'x-client-id' => trim($this->clientId),
+            'x-client-secret' => trim($this->clientSecret),
+            'x-api-version' => trim($this->apiVersion),
+            'Accept' => 'application/json',
+            'Content-Type' => 'application/json',
         ])->post(
-            $this->baseUrl . '/orders',
-            [
-                'order_id' =>
-                    $orderId,
+                $this->baseUrl . '/orders',
+                [
+                    'order_id' =>
+                        $orderId,
 
-                'order_amount' =>
-                    round(
-                        $amount,
-                        2
-                    ),
+                    'order_amount' =>
+                        round(
+                            $amount,
+                            2
+                        ),
 
-                'order_currency' =>
-                    'INR',
+                    'order_currency' =>
+                        'INR',
 
-                'customer_details' => [
+                    'customer_details' => [
 
-                    'customer_id' =>
-                        $customerId,
+                        'customer_id' =>
+                            $customerId,
 
-                    'customer_phone' =>
-                        $customerPhone,
+                        'customer_phone' =>
+                            $customerPhone,
 
-                    'customer_email' =>
-                        $customerEmail,
-                ],
+                        'customer_email' =>
+                            $customerEmail,
+                    ],
 
-                'order_meta' => [
+                    'order_meta' => [
 
-                    'return_url' =>
-                        $returnUrl,
+                        'return_url' =>
+                            $returnUrl,
 
-                    'notify_url' =>
-                        $notifyUrl,
-                ],
-            ]
-        );
+                        'notify_url' =>
+                            $notifyUrl,
+                    ],
+                ]
+            );
 
         /*
         |--------------------------------------------------------------------------
@@ -194,11 +183,11 @@ class CashfreeService
             'Accept' =>
                 'application/json',
         ])->get(
-            $this->baseUrl .
-            '/orders/' .
-            $orderId .
-            '/payments'
-        );
+                $this->baseUrl .
+                '/orders/' .
+                $orderId .
+                '/payments'
+            );
 
         if ($response->failed()) {
 
