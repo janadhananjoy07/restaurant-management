@@ -5,7 +5,6 @@
 @section('styles')
 
 <style>
-
     :root {
         --orders-dark: #1c1917;
         --orders-dark-2: #292524;
@@ -43,21 +42,13 @@
         --red-border: #fecaca;
     }
 
-
-    /* =========================================================
-       PAGE
-    ========================================================= */
-
     .orders-page {
         width: 100%;
         color: var(--orders-text);
         padding-bottom: 40px;
     }
 
-
-    /* =========================================================
-       HEADER
-    ========================================================= */
+    /* HEADER */
 
     .orders-header {
         display: flex;
@@ -100,27 +91,21 @@
         padding: 0 18px;
         border-radius: 9px;
         background: var(--orders-dark);
-        color: white;
+        color: #fff;
         font-size: 12px;
         font-weight: 800;
         text-decoration: none;
-        transition:
-            transform .25s ease,
-            background .25s ease,
-            box-shadow .25s ease;
+        transition: .25s ease;
     }
 
     .order-food-btn:hover {
-        color: white;
+        color: #fff;
         background: var(--orders-gold);
         transform: translateY(-2px);
         box-shadow: 0 8px 20px rgba(183, 121, 31, .18);
     }
 
-
-    /* =========================================================
-       ALERTS
-    ========================================================= */
+    /* ALERTS */
 
     .alert {
         display: flex;
@@ -154,26 +139,20 @@
         justify-content: center;
         border-radius: 50%;
         background: currentColor;
-        color: white;
+        color: #fff;
         font-size: 12px;
     }
 
-
-    /* =========================================================
-       ORDER CARD
-    ========================================================= */
+    /* ORDER CARD */
 
     .order-card {
         margin-bottom: 24px;
         overflow: hidden;
-        background: white;
+        background: #fff;
         border: 1px solid var(--orders-border);
         border-radius: 16px;
         box-shadow: 0 4px 18px rgba(28, 25, 23, .035);
-        transition:
-            border-color .25s ease,
-            box-shadow .25s ease,
-            transform .25s ease;
+        transition: .25s ease;
     }
 
     .order-card:hover {
@@ -182,10 +161,7 @@
         transform: translateY(-1px);
     }
 
-
-    /* =========================================================
-       ORDER HEADER
-    ========================================================= */
+    /* ORDER HEADER */
 
     .order-top {
         display: flex;
@@ -193,11 +169,7 @@
         align-items: center;
         gap: 20px;
         padding: 21px 24px;
-        background: linear-gradient(
-            135deg,
-            #faf9f7,
-            #fdfcfb
-        );
+        background: linear-gradient(135deg, #faf9f7, #fdfcfb);
         border-bottom: 1px solid var(--orders-border);
     }
 
@@ -234,10 +206,7 @@
         justify-content: flex-end;
     }
 
-
-    /* =========================================================
-       STATUS
-    ========================================================= */
+    /* STATUS */
 
     .status {
         display: inline-flex;
@@ -294,10 +263,7 @@
         color: #57534e;
     }
 
-
-    /* =========================================================
-       PAYMENT STATUS
-    ========================================================= */
+    /* PAYMENT */
 
     .payment-status {
         display: inline-flex;
@@ -332,19 +298,13 @@
         color: #57534e;
     }
 
-
-    /* =========================================================
-       BODY
-    ========================================================= */
+    /* BODY */
 
     .order-body {
         padding: 24px;
     }
 
-
-    /* =========================================================
-       TRACKING
-    ========================================================= */
+    /* TRACKING */
 
     .tracking-section {
         margin-bottom: 25px;
@@ -358,7 +318,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 18px;
+        margin-bottom: 20px;
     }
 
     .tracking-title strong {
@@ -369,19 +329,27 @@
     .tracking-title span {
         color: var(--orders-muted);
         font-size: 10px;
+        font-weight: 700;
+        text-transform: capitalize;
     }
 
     .tracking {
         display: grid;
         grid-template-columns: repeat(5, 1fr);
-        gap: 0;
+        width: 100%;
     }
 
     .tracking-step {
         position: relative;
+        min-width: 0;
         text-align: center;
     }
 
+    /*
+     * IMPORTANT:
+     * Connector starts from the center of the current icon
+     * and finishes at the center of the next icon.
+     */
     .tracking-step:not(:last-child)::after {
         content: "";
         position: absolute;
@@ -391,6 +359,7 @@
         height: 2px;
         background: #e7e5e4;
         z-index: 0;
+        transition: background .3s ease;
     }
 
     .tracking-step.active:not(:last-child)::after {
@@ -399,24 +368,25 @@
 
     .tracking-icon {
         position: relative;
-        z-index: 1;
+        z-index: 2;
         width: 30px;
         height: 30px;
-        margin: 0 auto 8px;
+        margin: 0 auto 9px;
         display: flex;
         align-items: center;
         justify-content: center;
         border-radius: 50%;
         background: #f5f5f4;
         color: #a8a29e;
-        border: 2px solid white;
+        border: 2px solid #fff;
         font-size: 11px;
         box-shadow: 0 0 0 1px #e7e5e4;
+        transition: .3s ease;
     }
 
     .tracking-step.active .tracking-icon {
         background: var(--orders-gold);
-        color: white;
+        color: #fff;
         box-shadow:
             0 0 0 1px var(--orders-gold),
             0 4px 12px rgba(183, 121, 31, .18);
@@ -436,10 +406,10 @@
 
     .tracking-step.active .tracking-label {
         color: var(--orders-dark);
+        font-weight: 800;
     }
 
     @keyframes trackingPulse {
-
         0% {
             box-shadow:
                 0 0 0 1px var(--orders-gold),
@@ -459,10 +429,7 @@
         }
     }
 
-
-    /* =========================================================
-       CANCELLED
-    ========================================================= */
+    /* CANCELLED */
 
     .cancelled-message {
         display: flex;
@@ -478,10 +445,7 @@
         font-weight: 700;
     }
 
-
-    /* =========================================================
-       DELIVERY
-    ========================================================= */
+    /* DELIVERY */
 
     .delivery-section {
         display: grid;
@@ -494,7 +458,7 @@
         padding: 14px 16px;
         border: 1px solid var(--orders-border);
         border-radius: 10px;
-        background: white;
+        background: #fff;
     }
 
     .delivery-label {
@@ -520,10 +484,7 @@
         word-break: break-word;
     }
 
-
-    /* =========================================================
-       ITEMS
-    ========================================================= */
+    /* ITEMS */
 
     .items-title {
         display: flex;
@@ -580,7 +541,7 @@
         align-items: center;
         justify-content: center;
         color: #a8a29e;
-        font-size: 21px;
+        font-size: 20px;
     }
 
     .item-info {
@@ -610,10 +571,7 @@
         white-space: nowrap;
     }
 
-
-    /* =========================================================
-       FOOTER
-    ========================================================= */
+    /* FOOTER */
 
     .order-footer {
         display: flex;
@@ -646,20 +604,13 @@
         padding: 0 15px;
         border: 0;
         border-radius: 8px;
-        background: linear-gradient(
-            135deg,
-            #f59e0b,
-            #d97706
-        );
+        background: linear-gradient(135deg, #f59e0b, #d97706);
         color: #1c1917;
         font-size: 11px;
         font-weight: 900;
         cursor: pointer;
         box-shadow: 0 5px 15px rgba(245, 158, 11, .18);
-        transition:
-            transform .2s ease,
-            box-shadow .2s ease,
-            filter .2s ease;
+        transition: .2s ease;
     }
 
     .pay-now-btn:hover {
@@ -712,14 +663,11 @@
         font-weight: 900;
     }
 
-
-    /* =========================================================
-       EMPTY
-    ========================================================= */
+    /* EMPTY */
 
     .empty {
         padding: 80px 25px;
-        background: white;
+        background: #fff;
         border: 1px solid var(--orders-border);
         border-radius: 16px;
         text-align: center;
@@ -734,7 +682,8 @@
         justify-content: center;
         border-radius: 50%;
         background: #f5eee4;
-        font-size: 40px;
+        color: var(--orders-gold);
+        font-size: 36px;
     }
 
     .empty h2 {
@@ -760,7 +709,7 @@
         padding: 0 20px;
         border-radius: 8px;
         background: var(--orders-dark);
-        color: white;
+        color: #fff;
         font-size: 12px;
         font-weight: 900;
         text-decoration: none;
@@ -769,17 +718,13 @@
 
     .menu-btn:hover {
         background: var(--orders-gold);
-        color: white;
+        color: #fff;
         transform: translateY(-2px);
     }
 
-
-    /* =========================================================
-       RESPONSIVE
-    ========================================================= */
+    /* RESPONSIVE */
 
     @media (max-width: 800px) {
-
         .orders-header {
             align-items: flex-start;
             flex-direction: column;
@@ -790,18 +735,16 @@
         }
 
         .tracking {
-            grid-template-columns: repeat(5, minmax(65px, 1fr));
             overflow-x: auto;
+            padding-bottom: 4px;
         }
 
         .tracking-step {
-            min-width: 70px;
+            min-width: 80px;
         }
     }
 
-
     @media (max-width: 650px) {
-
         .orders-header h1 {
             font-size: 32px;
         }
@@ -843,9 +786,7 @@
         }
     }
 
-
     @media (max-width: 450px) {
-
         .order-card {
             border-radius: 12px;
         }
@@ -872,786 +813,742 @@
             font-size: 8px;
         }
     }
-
 </style>
 
 @endsection
-
 
 @section('content')
 
 <div class="orders-page">
 
-    {{-- =====================================================
-         PAGE HEADER
-    ====================================================== --}}
+{{-- PAGE HEADER --}}
 
-    <div class="orders-header">
+<div class="orders-header">
 
-        <div>
+    <div>
+        <div class="orders-eyebrow">
+            Your dining history
+        </div>
 
-            <div class="orders-eyebrow">
-                Your dining history
+        <h1>
+            My Orders
+        </h1>
+
+        <p>
+            Track your food, payment and delivery status in one place.
+        </p>
+    </div>
+
+    <a
+        href="{{ route('user.menu') }}"
+        class="order-food-btn"
+    >
+        <i class="fa-solid fa-utensils"></i>
+        <span>Order Food</span>
+    </a>
+
+</div>
+
+
+{{-- SUCCESS MESSAGE --}}
+
+@if(session('success'))
+
+    <div class="alert alert-success">
+
+        <div class="alert-icon">
+            <i class="fa-solid fa-check"></i>
+        </div>
+
+        <span>
+            {{ session('success') }}
+        </span>
+
+    </div>
+
+@endif
+
+
+{{-- ERROR MESSAGE --}}
+
+@if(session('error'))
+
+    <div class="alert alert-error">
+
+        <div class="alert-icon">
+            <i class="fa-solid fa-exclamation"></i>
+        </div>
+
+        <span>
+            {{ session('error') }}
+        </span>
+
+    </div>
+
+@endif
+
+
+{{-- ORDERS --}}
+
+@if($orders->count() > 0)
+
+    @foreach($orders as $order)
+
+        @php
+
+            $currentStatus = strtolower(
+                trim((string) $order->status)
+            );
+
+            $statusClass = match ($currentStatus) {
+
+                'pending' => 'status-pending',
+
+                'confirmed' => 'status-confirmed',
+
+                'preparing' => 'status-preparing',
+
+                'out_for_delivery' => 'status-out-for-delivery',
+
+                'completed' => 'status-completed',
+
+                'cancelled' => 'status-cancelled',
+
+                default => 'status-default',
+            };
+
+
+            $paymentStatus = strtolower(
+                trim((string) ($order->payment_status ?? 'unpaid'))
+            );
+
+            $paymentClass = match ($paymentStatus) {
+
+                'paid' => 'payment-paid',
+
+                'pending' => 'payment-pending',
+
+                'failed' => 'payment-failed',
+
+                default => 'payment-unpaid',
+            };
+
+
+            /*
+             * ORDER PROGRESS
+             *
+             * pending          = 0
+             * confirmed        = 1
+             * preparing        = 2
+             * out_for_delivery = 3
+             * completed        = 4
+             */
+
+            $trackingStatuses = [
+                'pending',
+                'confirmed',
+                'preparing',
+                'out_for_delivery',
+                'completed',
+            ];
+
+            $currentIndex = array_search(
+                $currentStatus,
+                $trackingStatuses,
+                true
+            );
+
+            if ($currentIndex === false) {
+                $currentIndex = -1;
+            }
+
+
+            $steps = [
+
+                [
+                    'key' => 'pending',
+                    'label' => 'Placed',
+                    'icon' => 'fa-regular fa-clipboard',
+                ],
+
+                [
+                    'key' => 'confirmed',
+                    'label' => 'Confirmed',
+                    'icon' => 'fa-solid fa-check',
+                ],
+
+                [
+                    'key' => 'preparing',
+                    'label' => 'Preparing',
+                    'icon' => 'fa-solid fa-kitchen-set',
+                ],
+
+                [
+                    'key' => 'out_for_delivery',
+                    'label' => 'On the way',
+                    'icon' => 'fa-solid fa-motorcycle',
+                ],
+
+                [
+                    'key' => 'completed',
+                    'label' => 'Delivered',
+                    'icon' => 'fa-solid fa-utensils',
+                ],
+
+            ];
+
+        @endphp
+
+
+        {{-- ORDER CARD --}}
+
+        <div class="order-card">
+
+            {{-- ORDER HEADER --}}
+
+            <div class="order-top">
+
+                <div class="order-heading">
+
+                    <div class="order-label">
+                        Restaurant Order
+                    </div>
+
+                    <h2>
+                        #{{ $order->id }}
+                    </h2>
+
+                    <div class="order-date">
+                        {{ optional($order->created_at)->format('d M Y, h:i A') }}
+                    </div>
+
+                </div>
+
+
+                <div class="order-header-right">
+
+                    {{-- ORDER STATUS --}}
+
+                    <span class="status {{ $statusClass }}">
+
+                        <span class="status-dot"></span>
+
+                        @if($currentStatus === 'out_for_delivery')
+
+                            Out for Delivery
+
+                        @else
+
+                            {{ ucfirst(str_replace('_', ' ', $currentStatus)) }}
+
+                        @endif
+
+                    </span>
+
+
+                    {{-- PAYMENT STATUS --}}
+
+                    <span class="payment-status {{ $paymentClass }}">
+
+                        @if($paymentStatus === 'paid')
+
+                            <i class="fa-solid fa-check"></i>
+                            Paid
+
+                        @elseif($paymentStatus === 'pending')
+
+                            <i class="fa-solid fa-clock"></i>
+                            Payment Pending
+
+                        @elseif($paymentStatus === 'failed')
+
+                            <i class="fa-solid fa-xmark"></i>
+                            Payment Failed
+
+                        @else
+
+                            Payment Unpaid
+
+                        @endif
+
+                    </span>
+
+                </div>
+
             </div>
 
-            <h1>
-                My Orders
-            </h1>
 
-            <p>
-                Track your food, payment and delivery status in one place.
-            </p>
+            {{-- ORDER BODY --}}
+
+            <div class="order-body">
+
+
+                {{-- ORDER TRACKING --}}
+
+                @if($currentStatus !== 'cancelled')
+
+                    <div class="tracking-section">
+
+                        <div class="tracking-title">
+
+                            <strong>
+                                Order Progress
+                            </strong>
+
+                            <span>
+                                @if($currentStatus === 'out_for_delivery')
+                                    Out for Delivery
+                                @else
+                                    {{ ucfirst(str_replace('_', ' ', $currentStatus)) }}
+                                @endif
+                            </span>
+
+                        </div>
+
+
+                        <div class="tracking">
+
+                            @foreach($steps as $index => $step)
+
+                                @php
+
+                                    $stepActive =
+                                        $currentIndex >= $index;
+
+                                    $stepCurrent =
+                                        $currentIndex === $index;
+
+                                @endphp
+
+                                <div
+                                    class="
+                                        tracking-step
+                                        {{ $stepActive ? 'active' : '' }}
+                                        {{ $stepCurrent ? 'current' : '' }}
+                                    "
+                                >
+
+                                    <div class="tracking-icon">
+
+                                        <i class="{{ $step['icon'] }}"></i>
+
+                                    </div>
+
+                                    <span class="tracking-label">
+                                        {{ $step['label'] }}
+                                    </span>
+
+                                </div>
+
+                            @endforeach
+
+                        </div>
+
+                    </div>
+
+                @else
+
+                    <div class="cancelled-message">
+
+                        <span>
+                            <i class="fa-solid fa-circle-xmark"></i>
+                        </span>
+
+                        <span>
+                            This order has been cancelled.
+                        </span>
+
+                    </div>
+
+                @endif
+
+
+                {{-- DELIVERY INFORMATION --}}
+
+                <div class="delivery-section">
+
+                    <div class="delivery-card">
+
+                        <div class="delivery-label">
+
+                            <i class="fa-solid fa-location-dot"></i>
+
+                            Delivery Address
+
+                        </div>
+
+                        <div class="delivery-value">
+
+                            {{ $order->address ?: 'Not provided' }}
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="delivery-card">
+
+                        <div class="delivery-label">
+
+                            <i class="fa-solid fa-phone"></i>
+
+                            Contact Number
+
+                        </div>
+
+                        <div class="delivery-value">
+
+                            {{ $order->phone ?: 'Not provided' }}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                {{-- ORDER ITEMS --}}
+
+                <div class="items-title">
+
+                    <strong>
+                        Order Items
+                    </strong>
+
+                    <span class="items-count">
+
+                        {{ $order->items->sum('quantity') }}
+
+                        {{ $order->items->sum('quantity') == 1 ? 'item' : 'items' }}
+
+                    </span>
+
+                </div>
+
+
+                <div class="items">
+
+                    @foreach($order->items as $item)
+
+                        @php
+
+                            $menuItem = $item->menuItem;
+
+                            $imagePath = null;
+
+                            if ($menuItem && $menuItem->image) {
+
+                                $storedImage = ltrim(
+                                    $menuItem->image,
+                                    '/'
+                                );
+
+                                if (
+                                    str_starts_with(
+                                        $storedImage,
+                                        'storage/'
+                                    )
+                                ) {
+
+                                    $imagePath = asset(
+                                        $storedImage
+                                    );
+
+                                } else {
+
+                                    $imagePath = asset(
+                                        'storage/' . $storedImage
+                                    );
+
+                                }
+
+                            }
+
+                        @endphp
+
+
+                        <div class="item">
+
+                            {{-- IMAGE --}}
+
+                            <div class="item-image">
+
+                                @if($imagePath)
+
+                                    <img
+                                        src="{{ $imagePath }}"
+                                        alt="{{ $menuItem->name ?? 'Food item' }}"
+                                        loading="lazy"
+                                        onerror="
+                                            this.style.display='none';
+
+                                            const placeholder =
+                                                this.parentElement.querySelector('.item-placeholder');
+
+                                            if (placeholder) {
+                                                placeholder.style.display='flex';
+                                            }
+                                        "
+                                    >
+
+                                    <div
+                                        class="item-placeholder"
+                                        style="display:none;"
+                                    >
+                                        <i class="fa-solid fa-utensils"></i>
+                                    </div>
+
+                                @else
+
+                                    <div class="item-placeholder">
+                                        <i class="fa-solid fa-utensils"></i>
+                                    </div>
+
+                                @endif
+
+                            </div>
+
+
+                            {{-- INFO --}}
+
+                            <div class="item-info">
+
+                                <div class="item-name">
+
+                                    {{ $menuItem->name ?? 'Menu Item' }}
+
+                                </div>
+
+                                <div class="item-meta">
+
+                                    &#8377;{{ number_format((float) $item->price, 2) }}
+
+                                    &times;
+
+                                    {{ $item->quantity }}
+
+                                </div>
+
+                            </div>
+
+
+                            {{-- ITEM TOTAL --}}
+
+                            <div class="item-price">
+
+                                &#8377;{{ number_format(
+                                    (float) $item->price *
+                                    (int) $item->quantity,
+                                    2
+                                ) }}
+
+                            </div>
+
+                        </div>
+
+                    @endforeach
+
+                </div>
+
+            </div>
+
+
+            {{-- ORDER FOOTER --}}
+
+            <div class="order-footer">
+
+
+                {{-- PAYMENT AREA --}}
+
+                <div class="payment-area">
+
+
+                    {{-- PAID --}}
+
+                    @if($paymentStatus === 'paid')
+
+                        <div class="paid-label">
+
+                            <i class="fa-solid fa-circle-check"></i>
+
+                            Payment Successful
+
+                        </div>
+
+                        @if(!empty($order->payment_id))
+
+                            <span class="payment-note">
+
+                                Payment ID:
+                                {{ $order->payment_id }}
+
+                            </span>
+
+                        @endif
+
+
+                    {{-- PENDING --}}
+
+                    @elseif($paymentStatus === 'pending')
+
+                        <span class="payment-note">
+
+                            <i class="fa-solid fa-clock"></i>
+
+                            Payment is pending
+
+                        </span>
+
+                        @if(
+                            $currentStatus !== 'cancelled' &&
+                            $currentStatus !== 'completed'
+                        )
+
+                            <form
+                                action="{{ route('payment.cashfree.create') }}"
+                                method="POST"
+                            >
+
+                                @csrf
+
+                                <input
+                                    type="hidden"
+                                    name="order_id"
+                                    value="{{ $order->id }}"
+                                >
+
+                                <button
+                                    type="submit"
+                                    class="pay-now-btn"
+                                >
+
+                                    <i class="fa-solid fa-credit-card"></i>
+
+                                    Check / Pay Again
+
+                                </button>
+
+                            </form>
+
+                        @endif
+
+
+                    {{-- FAILED / UNPAID --}}
+
+                    @elseif(
+                        $paymentStatus === 'failed' ||
+                        $paymentStatus === 'unpaid'
+                    )
+
+                        @if(
+                            $currentStatus !== 'cancelled' &&
+                            $currentStatus !== 'completed'
+                        )
+
+                            <form
+                                action="{{ route('payment.cashfree.create') }}"
+                                method="POST"
+                            >
+
+                                @csrf
+
+                                <input
+                                    type="hidden"
+                                    name="order_id"
+                                    value="{{ $order->id }}"
+                                >
+
+                                <button
+                                    type="submit"
+                                    class="pay-now-btn"
+                                >
+
+                                    <i class="fa-solid fa-credit-card"></i>
+
+                                    Pay Now
+
+                                </button>
+
+                            </form>
+
+                        @else
+
+                            <span class="payment-failed-label">
+
+                                <i class="fa-solid fa-circle-xmark"></i>
+
+                                Payment not completed
+
+                            </span>
+
+                        @endif
+
+                    @endif
+
+                </div>
+
+
+                {{-- TOTAL --}}
+
+                <div class="total-area">
+
+                    <span class="total-label">
+                        Order Total
+                    </span>
+
+                    <span class="order-total">
+
+                        &#8377;{{ number_format(
+                            (float) $order->total_amount,
+                            2
+                        ) }}
+
+                    </span>
+
+                </div>
+
+            </div>
 
         </div>
 
+    @endforeach
+
+
+@else
+
+    {{-- EMPTY STATE --}}
+
+    <div class="empty">
+
+        <div class="empty-icon">
+
+            <i class="fa-solid fa-box-open"></i>
+
+        </div>
+
+        <h2>
+            No orders yet
+        </h2>
+
+        <p>
+            You haven't placed an order yet.
+            Explore our menu and discover something delicious
+            from BenStoke.
+        </p>
+
         <a
             href="{{ route('user.menu') }}"
-            class="order-food-btn"
+            class="menu-btn"
         >
-            <span>ðŸ½ï¸</span>
-            Order Food
+            Browse Our Menu
+            <i class="fa-solid fa-arrow-right" style="margin-left:8px;"></i>
         </a>
 
     </div>
 
+@endif
 
-    {{-- =====================================================
-         SUCCESS MESSAGE
-    ====================================================== --}}
-
-    @if(session('success'))
-
-        <div class="alert alert-success">
-
-            <div class="alert-icon">
-                âœ“
-            </div>
-
-            <span>
-                {{ session('success') }}
-            </span>
-
-        </div>
-
-    @endif
-
-
-    {{-- =====================================================
-         ERROR MESSAGE
-    ====================================================== --}}
-
-    @if(session('error'))
-
-        <div class="alert alert-error">
-
-            <div class="alert-icon">
-                !
-            </div>
-
-            <span>
-                {{ session('error') }}
-            </span>
-
-        </div>
-
-    @endif
-
-
-    {{-- =====================================================
-         ORDERS
-    ====================================================== --}}
-
-    @if($orders->count() > 0)
-
-        @foreach($orders as $order)
-
-            @php
-
-                /*
-                |--------------------------------------------------------------------------
-                | ORDER STATUS
-                |--------------------------------------------------------------------------
-                */
-
-                $currentStatus = strtolower(
-                    trim((string) $order->status)
-                );
-
-                $statusClass = match ($currentStatus) {
-
-                    'pending'
-                        => 'status-pending',
-
-                    'confirmed'
-                        => 'status-confirmed',
-
-                    'preparing'
-                        => 'status-preparing',
-
-                    'out_for_delivery'
-                        => 'status-out-for-delivery',
-
-                    'completed'
-                        => 'status-completed',
-
-                    'cancelled'
-                        => 'status-cancelled',
-
-                    default
-                        => 'status-default',
-                };
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | PAYMENT STATUS
-                |--------------------------------------------------------------------------
-                */
-
-                $paymentStatus = strtolower(
-                    trim((string) ($order->payment_status ?? 'unpaid'))
-                );
-
-$paymentClass = match ($paymentStatus) {
-
-                    'paid'
-                        => 'payment-paid',
-
-                    'pending'
-                        => 'payment-pending',
-
-                    'failed'
-                        => 'payment-failed',
-
-                    default
-                        => 'payment-unpaid',
-                };
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | TRACKING
-                |--------------------------------------------------------------------------
-                */
-
-                $trackingStatuses = [
-                    'pending',
-                    'confirmed',
-                    'preparing',
-                    'out_for_delivery',
-                    'completed',
-                ];
-
-                $currentIndex = array_search(
-                    $currentStatus,
-                    $trackingStatuses,
-                    true
-                );
-
-                if ($currentIndex === false) {
-                    $currentIndex = -1;
-                }
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | TRACKING STEPS
-                |--------------------------------------------------------------------------
-                */
-
-                $steps = [
-
-                    [
-                        'key' => 'pending',
-                        'label' => 'Placed',
-                        'icon' => 'ðŸ“',
-                    ],
-
-                    [
-                        'key' => 'confirmed',
-                        'label' => 'Confirmed',
-                        'icon' => 'âœ“',
-                    ],
-
-                    [
-                        'key' => 'preparing',
-                        'label' => 'Preparing',
-                        'icon' => 'ðŸ‘¨â€ðŸ³',
-                    ],
-
-                    [
-                        'key' => 'out_for_delivery',
-                        'label' => 'On the way',
-                        'icon' => 'ðŸ›µ',
-                    ],
-
-                    [
-                        'key' => 'completed',
-                        'label' => 'Delivered',
-                        'icon' => 'ðŸ½ï¸',
-                    ],
-
-                ];
-
-            @endphp
-
-
-            {{-- =================================================
-                 ORDER CARD
-            ================================================== --}}
-
-            <div class="order-card">
-
-
-                {{-- =================================================
-                     ORDER HEADER
-                ================================================== --}}
-
-                <div class="order-top">
-
-                    <div class="order-heading">
-
-                        <div class="order-label">
-                            Restaurant Order
-                        </div>
-
-                        <h2>
-                            #{{ $order->id }}
-                        </h2>
-
-                        <div class="order-date">
-                            {{ optional($order->created_at)->format('d M Y, h:i A') }}
-                        </div>
-
-                    </div>
-
-
-                    <div class="order-header-right">
-
-                        {{-- ORDER STATUS --}}
-
-                        <span class="status {{ $statusClass }}">
-
-                            <span class="status-dot"></span>
-
-                            @if($currentStatus === 'out_for_delivery')
-
-                                Out for Delivery
-
-                            @else
-
-                                {{ ucfirst(str_replace('_', ' ', $currentStatus)) }}
-
-                            @endif
-
-                        </span>
-
-
-                        {{-- PAYMENT STATUS --}}
-
-                        <span class="payment-status {{ $paymentClass }}">
-
-                            @if($paymentStatus === 'paid')
-
-                                âœ“ Paid
-
-                            @elseif($paymentStatus === 'pending')
-
-                                â—· Payment Pending
-
-                            @elseif($paymentStatus === 'failed')
-
-                                âœ• Payment Failed
-
-                            @else
-
-                                Payment Unpaid
-
-                            @endif
-
-                        </span>
-
-                    </div>
-
-                </div>
-
-
-                {{-- =================================================
-                     ORDER BODY
-                ================================================== --}}
-
-                <div class="order-body">
-
-
-                    {{-- =================================================
-                         ORDER TRACKING
-                    ================================================== --}}
-
-                    @if($currentStatus !== 'cancelled')
-
-                        <div class="tracking-section">
-
-                            <div class="tracking-title">
-
-                                <strong>
-                                    Order Progress
-                                </strong>
-
-                                <span>
-                                    {{ ucfirst(str_replace('_', ' ', $currentStatus)) }}
-                                </span>
-
-                            </div>
-
-
-                            <div class="tracking">
-
-                                @foreach($steps as $index => $step)
-
-                                    @php
-
-                                        $stepActive =
-                                            $currentIndex >= $index;
-
-                                        $stepCurrent =
-                                            $currentIndex === $index;
-
-                                    @endphp
-
-                                    <div
-                                        class="
-                                            tracking-step
-                                            {{ $stepActive ? 'active' : '' }}
-                                            {{ $stepCurrent ? 'current' : '' }}
-                                        "
-                                    >
-
-                                        <div class="tracking-icon">
-                                            {{ $step['icon'] }}
-                                        </div>
-
-                                        <span class="tracking-label">
-                                            {{ $step['label'] }}
-                                        </span>
-
-                                    </div>
-
-                                @endforeach
-
-                            </div>
-
-                        </div>
-
-                    @else
-
-                        <div class="cancelled-message">
-
-                            <span>âœ•</span>
-
-                            <span>
-                                This order has been cancelled.
-                            </span>
-
-                        </div>
-
-                    @endif
-
-
-                    {{-- =================================================
-                         DELIVERY INFORMATION
-                    ================================================== --}}
-
-                    <div class="delivery-section">
-
-                        <div class="delivery-card">
-
-                            <div class="delivery-label">
-
-                                <i class="fa-solid fa-location-dot"></i>
-
-                                Delivery Address
-
-                            </div>
-
-                            <div class="delivery-value">
-
-                                {{ $order->address ?: 'Not provided' }}
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="delivery-card">
-
-                            <div class="delivery-label">
-
-                                <i class="fa-solid fa-phone"></i>
-
-                                Contact Number
-
-                            </div>
-
-                            <div class="delivery-value">
-
-                                {{ $order->phone ?: 'Not provided' }}
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    {{-- =================================================
-                         ORDER ITEMS
-                    ================================================== --}}
-
-                    <div class="items-title">
-
-                        <strong>
-                            Order Items
-                        </strong>
-
-                        <span class="items-count">
-
-                            {{ $order->items->sum('quantity') }}
-
-                            {{ $order->items->sum('quantity') == 1 ? 'item' : 'items' }}
-
-                        </span>
-
-                    </div>
-
-
-                    <div class="items">
-
-                        @foreach($order->items as $item)
-
-                            @php
-
-                                $menuItem = $item->menuItem;
-
-                                $imagePath = null;
-
-                                if ($menuItem && $menuItem->image) {
-
-                                    $storedImage = ltrim(
-                                        $menuItem->image,
-                                        '/'
-                                    );
-
-                                    if (
-                                        str_starts_with(
-                                            $storedImage,
-                                            'storage/'
-                                        )
-                                    ) {
-
-                                        $imagePath = asset(
-                                            $storedImage
-                                        );
-
-                                    } else {
-
-                                        $imagePath = asset(
-                                            'storage/' . $storedImage
-                                        );
-                                    }
-                                }
-
-                            @endphp
-
-
-                            <div class="item">
-
-
-                                {{-- IMAGE --}}
-
-                                <div class="item-image">
-
-                                    @if($imagePath)
-
-                                        <img
-                                            src="{{ $imagePath }}"
-                                            alt="{{ $menuItem->name ?? 'Food item' }}"
-                                            loading="lazy"
-                                            onerror="
-                                                this.style.display='none';
-
-                                                const placeholder =
-                                                    this.parentElement.querySelector('.item-placeholder');
-
-                                                if (placeholder) {
-                                                    placeholder.style.display='flex';
-                                                }
-                                            "
-                                        >
-
-                                        <div
-                                            class="item-placeholder"
-                                            style="display:none;"
-                                        >
-                                            ðŸ½ï¸
-                                        </div>
-
-                                    @else
-
-                                        <div class="item-placeholder">
-                                            ðŸ½ï¸
-                                        </div>
-
-                                    @endif
-
-                                </div>
-
-
-                                {{-- INFO --}}
-
-                                <div class="item-info">
-
-                                    <div class="item-name">
-
-                                        {{ $menuItem->name ?? 'Menu Item' }}
-
-                                    </div>
-
-                                    <div class="item-meta">
-
-                                        â‚¹{{ number_format((float) $item->price, 2) }}
-
-                                        Ã—
-
-                                        {{ $item->quantity }}
-
-                                    </div>
-
-                                </div>
-
-
-                                {{-- ITEM TOTAL --}}
-
-                                <div class="item-price">
-
-                                    â‚¹{{ number_format(
-                                        (float) $item->price *
-                                        (int) $item->quantity,
-                                        2
-                                    ) }}
-
-                                </div>
-
-                            </div>
-
-                        @endforeach
-
-                    </div>
-
-                </div>
-
-
-                {{-- =================================================
-                     FOOTER
-                ================================================== --}}
-
-                <div class="order-footer">
-
-
-                    {{-- =================================================
-                         PAYMENT AREA
-                    ================================================== --}}
-
-                    <div class="payment-area">
-
-
-                        {{-- =================================================
-                             PAID
-                        ================================================== --}}
-
-                        @if($paymentStatus === 'paid')
-
-                            <div class="paid-label">
-
-                                âœ“ Payment Successful
-
-                            </div>
-
-                            @if(!empty($order->payment_id))
-
-                                <span class="payment-note">
-
-                                    Payment ID:
-                                    {{ $order->payment_id }}
-
-                                </span>
-
-                            @endif
-
-
-                        {{-- =================================================
-                             PENDING
-                        ================================================== --}}
-
-                        @elseif($paymentStatus === 'pending')
-
-                            <span class="payment-note">
-
-                                â—· Payment is pending
-
-                            </span>
-
-                            @if(
-                                $currentStatus !== 'cancelled' &&
-                                $currentStatus !== 'completed'
-                            )
-
-                                <form
-                                    action="{{ route('payment.cashfree.create') }}"
-                                    method="POST"
-                                >
-
-                                    @csrf
-
-                                    <input
-                                        type="hidden"
-                                        name="order_id"
-                                        value="{{ $order->id }}"
-                                    >
-
-                                    <button
-                                        type="submit"
-                                        class="pay-now-btn"
-                                    >
-
-                                        <span>ðŸ’³</span>
-
-                                        Check / Pay Again
-
-                                    </button>
-
-                                </form>
-
-                            @endif
-
-
-                        {{-- =================================================
-                             FAILED / UNPAID
-                        ================================================== --}}
-
-                        @elseif(
-                            $paymentStatus === 'failed' ||
-                            $paymentStatus === 'unpaid'
-                        )
-
-                            @if(
-                                $currentStatus !== 'cancelled' &&
-                                $currentStatus !== 'completed'
-                            )
-
-                                <form
-                                    action="{{ route('payment.cashfree.create') }}"
-                                    method="POST"
-                                >
-
-                                    @csrf
-
-                                    <input
-                                        type="hidden"
-                                        name="order_id"
-                                        value="{{ $order->id }}"
-                                    >
-
-                                    <button
-                                        type="submit"
-                                        class="pay-now-btn"
-                                    >
-
-                                        <span>ðŸ’³</span>
-
-                                        Pay Now
-
-                                    </button>
-
-                                </form>
-
-                            @else
-
-                                <span class="payment-failed-label">
-
-                                    Payment not completed
-
-                                </span>
-
-                            @endif
-
-                        @endif
-
-                    </div>
-
-
-                    {{-- =================================================
-                         TOTAL
-                    ================================================== --}}
-
-                    <div class="total-area">
-
-                        <span class="total-label">
-                            Order Total
-                        </span>
-
-                        <span class="order-total">
-
-                            â‚¹{{ number_format(
-                                (float) $order->total_amount,
-                                2
-                            ) }}
-
-                        </span>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        @endforeach
-
-
-    @else
-
-
-        {{-- =================================================
-             EMPTY STATE
-        ================================================== --}}
-
-        <div class="empty">
-
-            <div class="empty-icon">
-                ðŸ“¦
-            </div>
-
-            <h2>
-                No orders yet
-            </h2>
-
-            <p>
-                You haven't placed an order yet.
-                Explore our menu and discover something delicious
-                from BenStoke.
-            </p>
-
-            <a
-                href="{{ route('user.menu') }}"
-                class="menu-btn"
-            >
-                Browse Our Menu â†’
-            </a>
-
-        </div>
-
-    @endif
 
 </div>
 
-@endsection 
-
+@endsection
