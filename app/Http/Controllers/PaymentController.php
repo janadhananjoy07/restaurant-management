@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class PaymentController extends Controller
 {
@@ -26,22 +27,22 @@ class PaymentController extends Controller
 
     public function create(Request $request)
     {
+        Log::info('CASHFREE CREATE CALLED', [
+            'method'   => $request->method(),
+            'url'      => $request->fullUrl(),
+            'order_id' => $request->input('order_id'),
+            'user_id'  => Auth::id(),
+        ]);
 
-
-
-Log::info('CASHFREE CREATE CALLED', [
-        'method' => $request->method(),
-        'url' => $request->fullUrl(),                   //test 
-        'order_id' => $request->input('order_id'),
-        'user_id' => Auth::id(),
-    ]);
-    
         $user = Auth::user();
 
         if (!$user) {
             return redirect()
                 ->route('login')
-                ->with('error', 'Please login before making a payment.');
+                ->with(
+                    'error',
+                    'Please login before making a payment.'
+                );
         }
 
         $validated = $request->validate([
@@ -51,6 +52,12 @@ Log::info('CASHFREE CREATE CALLED', [
             ],
         ]);
 
+        /*
+        |--------------------------------------------------------------------------
+        | FIND CUSTOMER ORDER
+        |--------------------------------------------------------------------------
+        */
+
         $order = Order::where('id', $validated['order_id'])
             ->where('user_id', $user->id)
             ->first();
@@ -58,7 +65,10 @@ Log::info('CASHFREE CREATE CALLED', [
         if (!$order) {
             return redirect()
                 ->route('user.orders')
-                ->with('error', 'Order could not be found.');
+                ->with(
+                    'error',
+                    'Order could not be found.'
+                );
         }
 
         /*
@@ -91,6 +101,12 @@ Log::info('CASHFREE CREATE CALLED', [
                 );
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | CREATE CASHFREE PAYMENT
+        |--------------------------------------------------------------------------
+        */
+
         return $this->createCashfreePayment(
             $order,
             $user,
@@ -98,29 +114,9 @@ Log::info('CASHFREE CREATE CALLED', [
         );
     }
 
-
     /*
     |--------------------------------------------------------------------------
     | STAFF - CREATE ONLINE PAYMENT DURING DELIVERY
-    |--------------------------------------------------------------------------
-    |
-    | Customer originally selected Cash on Delivery.
-    |
-    | At delivery:
-    |
-    | Staff clicks:
-    |
-    |     Pay Online
-    |
-    | Cashfree Checkout opens.
-    |
-    | If payment succeeds:
-    |
-    |     payment_status = paid
-    |     payment_method = online
-    |
-    | The staff can then complete the delivery.
-    |
     |--------------------------------------------------------------------------
     */
 
@@ -206,7 +202,7 @@ Log::info('CASHFREE CREATE CALLED', [
 
         /*
         |--------------------------------------------------------------------------
-        | CUSTOMER INFORMATION
+        | CUSTOMER
         |--------------------------------------------------------------------------
         */
 
@@ -223,7 +219,7 @@ Log::info('CASHFREE CREATE CALLED', [
 
         /*
         |--------------------------------------------------------------------------
-        | ASSIGN DELIVERY PARTNER
+        | ASSIGN DELIVERY STAFF
         |--------------------------------------------------------------------------
         */
 
@@ -245,7 +241,6 @@ Log::info('CASHFREE CREATE CALLED', [
         );
     }
 
-
     /*
     |--------------------------------------------------------------------------
     | COMMON CASHFREE PAYMENT CREATION
@@ -257,6 +252,20 @@ Log::info('CASHFREE CREATE CALLED', [
         $user,
         string $source = 'customer'
     ) {
+        /*
+        |--------------------------------------------------------------------------
+        | VALID SOURCE
+        |--------------------------------------------------------------------------
+        */
+
+        if (!in_array(
+            $source,
+            ['customer', 'staff'],
+            true
+        )) {
+            $source = 'customer';
+        }
+
         /*
         |--------------------------------------------------------------------------
         | CUSTOMER CHECK
@@ -272,7 +281,7 @@ Log::info('CASHFREE CREATE CALLED', [
 
         /*
         |--------------------------------------------------------------------------
-        | CANCELLED ORDER
+        | CANCELLED
         |--------------------------------------------------------------------------
         */
 
@@ -298,6 +307,32 @@ Log::info('CASHFREE CREATE CALLED', [
 
         /*
         |--------------------------------------------------------------------------
+        | VALIDATE ORDER AMOUNT
+        |--------------------------------------------------------------------------
+        */
+
+        $amount = round(
+            (float) $order->total_amount,
+            2
+        );
+
+        if ($amount <= 0) {
+            Log::error(
+                'Cashfree payment rejected because order amount is invalid.',
+                [
+                    'order_id' => $order->id,
+                    'amount'   => $amount,
+                ]
+            );
+
+            return back()->withErrors([
+                'payment' =>
+                    'Invalid order amount.',
+            ]);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
         | CUSTOMER PHONE
         |--------------------------------------------------------------------------
         */
@@ -313,6 +348,10 @@ Log::info('CASHFREE CREATE CALLED', [
             ]);
         }
 
+        $customerPhone = trim(
+            (string) $customerPhone
+        );
+
         /*
         |--------------------------------------------------------------------------
         | CUSTOMER EMAIL
@@ -323,26 +362,28 @@ Log::info('CASHFREE CREATE CALLED', [
             $user->email
             ?: 'customer@example.com';
 
+        $customerEmail = trim(
+            (string) $customerEmail
+        );
+
         /*
         |--------------------------------------------------------------------------
-        | UNIQUE CASHFREE ORDER ID
+        | CASHFREE ORDER ID
         |--------------------------------------------------------------------------
         */
 
-        $cashfreeOrderId =
-            ($source === 'staff'
+        $prefix =
+            $source === 'staff'
                 ? 'DELIVERY_'
-                : 'BENSTOKE_')
-            .
-            $order->id
-            .
-            '_'
-            .
-            time()
-            .
-            '_'
-            .
-            random_int(1000, 9999);
+                : 'BENSTOKE_';
+
+        $cashfreeOrderId =
+            $prefix
+            . $order->id
+            . '_'
+            . now()->format('YmdHis')
+            . '_'
+            . random_int(1000, 9999);
 
         /*
         |--------------------------------------------------------------------------
@@ -352,24 +393,35 @@ Log::info('CASHFREE CREATE CALLED', [
 
         try {
 
-            $cashfreeOrder = $this->cashfree->createOrder(
-                $cashfreeOrderId,
-                (float) $order->total_amount,
-                'USER_' . $user->id,
-                (string) $customerPhone,
-                (string) $customerEmail,
-                $source
-            );
+            $cashfreeOrder =
+                $this->cashfree->createOrder(
+                    $cashfreeOrderId,
+                    $amount,
+                    'USER_' . $user->id,
+                    $customerPhone,
+                    $customerEmail,
+                    $source
+                );
 
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
 
             Log::error(
                 'Cashfree order creation failed.',
                 [
-                    'order_id' => $order->id,
-                    'user_id' => $user->id,
-                    'source' => $source,
-                    'error' => $e->getMessage(),
+                    'order_id' =>
+                        $order->id,
+
+                    'user_id' =>
+                        $user->id,
+
+                    'source' =>
+                        $source,
+
+                    'amount' =>
+                        $amount,
+
+                    'error' =>
+                        $e->getMessage(),
                 ]
             );
 
@@ -381,7 +433,39 @@ Log::info('CASHFREE CREATE CALLED', [
 
         /*
         |--------------------------------------------------------------------------
-        | SAVE CASHFREE ORDER ID
+        | PAYMENT SESSION ID
+        |--------------------------------------------------------------------------
+        */
+
+        $paymentSessionId =
+            $cashfreeOrder['payment_session_id']
+            ?? null;
+
+        if (!$paymentSessionId) {
+
+            Log::error(
+                'Cashfree payment session ID missing.',
+                [
+                    'order_id' =>
+                        $order->id,
+
+                    'cashfree_order_id' =>
+                        $cashfreeOrderId,
+
+                    'cashfree_response' =>
+                        $cashfreeOrder,
+                ]
+            );
+
+            return back()->withErrors([
+                'payment' =>
+                    'Cashfree payment session could not be created.',
+            ]);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | SAVE CASHFREE ORDER
         |--------------------------------------------------------------------------
         */
 
@@ -399,8 +483,12 @@ Log::info('CASHFREE CREATE CALLED', [
 
         /*
         |--------------------------------------------------------------------------
-        | KEEP STAFF ASSIGNED
+        | PAYMENT METHOD
         |--------------------------------------------------------------------------
+        |
+        | We do not mark the order paid here.
+        | Payment is marked paid only after server-side verification.
+        |
         */
 
         if ($source === 'staff') {
@@ -411,61 +499,33 @@ Log::info('CASHFREE CREATE CALLED', [
 
         /*
         |--------------------------------------------------------------------------
-        | PAYMENT SESSION
-        |--------------------------------------------------------------------------
-        */
-
-        $paymentSessionId =
-            $cashfreeOrder['payment_session_id']
-            ?? null;
-
-        if (!$paymentSessionId) {
-
-            Log::error(
-                'Cashfree payment session ID missing.',
-                [
-                    'order_id' => $order->id,
-                    'cashfree_order_id' =>
-                        $order->cashfree_order_id,
-                    'cashfree_response' =>
-                        $cashfreeOrder,
-                ]
-            );
-
-            return back()->withErrors([
-                'payment' =>
-                    'Cashfree payment session could not be created.',
-            ]);
-        }
-
-        /*
-        |--------------------------------------------------------------------------
         | PAYMENT PAGE
         |--------------------------------------------------------------------------
         */
 
-        if ($source === 'staff') {
+        $viewData = [
+            'order' =>
+                $order,
 
+            'paymentSessionId' =>
+                $paymentSessionId,
+
+            'paymentSource' =>
+                $source,
+        ];
+
+        if ($source === 'staff') {
             return view(
                 'staff.payment',
-                [
-                    'order' => $order,
-                    'paymentSessionId' => $paymentSessionId,
-                    'paymentSource' => 'staff',
-                ]
+                $viewData
             );
         }
 
         return view(
             'user.payment',
-            [
-                'order' => $order,
-                'paymentSessionId' => $paymentSessionId,
-                'paymentSource' => 'customer',
-            ]
+            $viewData
         );
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -475,34 +535,55 @@ Log::info('CASHFREE CREATE CALLED', [
 
     public function return(Request $request)
     {
+        /*
+        |--------------------------------------------------------------------------
+        | CASHFREE ORDER ID
+        |--------------------------------------------------------------------------
+        */
+
         $cashfreeOrderId =
-            $request->query('order_id');
+            trim(
+                (string) $request->query('order_id')
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | PAYMENT SOURCE
+        |--------------------------------------------------------------------------
+        */
 
         $source =
-            $request->query('source', 'customer');
+            (string) $request->query(
+                'source',
+                'customer'
+            );
 
-        if (!$cashfreeOrderId) {
-
-            if ($source === 'staff') {
-                return redirect()
-                    ->route('staff.dashboard')
-                    ->with(
-                        'error',
-                        'Payment order information is missing.'
-                    );
-            }
-
-            return redirect()
-                ->route('user.orders')
-                ->with(
-                    'error',
-                    'Payment order information is missing.'
-                );
+        if (!in_array(
+            $source,
+            ['customer', 'staff'],
+            true
+        )) {
+            $source = 'customer';
         }
 
         /*
         |--------------------------------------------------------------------------
-        | FIND ORDER
+        | ORDER ID MISSING
+        |--------------------------------------------------------------------------
+        */
+
+        if ($cashfreeOrderId === '') {
+
+            return $this->paymentReturnRedirect(
+                null,
+                $source,
+                'Payment order information is missing.'
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | FIND LOCAL ORDER
         |--------------------------------------------------------------------------
         */
 
@@ -518,30 +599,27 @@ Log::info('CASHFREE CREATE CALLED', [
                 [
                     'cashfree_order_id' =>
                         $cashfreeOrderId,
+
+                    'source' =>
+                        $source,
                 ]
             );
 
-            if ($source === 'staff') {
-                return redirect()
-                    ->route('staff.dashboard')
-                    ->with(
-                        'error',
-                        'Order could not be found.'
-                    );
-            }
-
-            return redirect()
-                ->route('user.orders')
-                ->with(
-                    'error',
-                    'Order could not be found.'
-                );
+            return $this->paymentReturnRedirect(
+                null,
+                $source,
+                'Order could not be found.'
+            );
         }
 
         /*
         |--------------------------------------------------------------------------
-        | VERIFY PAYMENT WITH CASHFREE
+        | VERIFY PAYMENT FROM CASHFREE
         |--------------------------------------------------------------------------
+        |
+        | Never trust the browser return alone.
+        | Cashfree recommends checking payment status from the server.
+        |
         */
 
         try {
@@ -551,14 +629,20 @@ Log::info('CASHFREE CREATE CALLED', [
                     $cashfreeOrderId
                 );
 
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
 
             Log::error(
                 'Cashfree payment verification failed.',
                 [
-                    'order_id' => $order->id,
+                    'order_id' =>
+                        $order->id,
+
                     'cashfree_order_id' =>
                         $cashfreeOrderId,
+
+                    'source' =>
+                        $source,
+
                     'error' =>
                         $e->getMessage(),
                 ]
@@ -577,7 +661,7 @@ Log::info('CASHFREE CREATE CALLED', [
 
         /*
         |--------------------------------------------------------------------------
-        | SUCCESS PAYMENT
+        | FIND SUCCESS PAYMENT
         |--------------------------------------------------------------------------
         */
 
@@ -596,7 +680,7 @@ Log::info('CASHFREE CREATE CALLED', [
 
         /*
         |--------------------------------------------------------------------------
-        | PENDING PAYMENT
+        | FIND PENDING PAYMENT
         |--------------------------------------------------------------------------
         */
 
@@ -615,7 +699,7 @@ Log::info('CASHFREE CREATE CALLED', [
 
         /*
         |--------------------------------------------------------------------------
-        | USER DROPPED
+        | FIND USER DROPPED PAYMENT
         |--------------------------------------------------------------------------
         */
 
@@ -634,7 +718,7 @@ Log::info('CASHFREE CREATE CALLED', [
 
         /*
         |--------------------------------------------------------------------------
-        | FAILED
+        | FIND FAILED PAYMENT
         |--------------------------------------------------------------------------
         */
 
@@ -642,12 +726,13 @@ Log::info('CASHFREE CREATE CALLED', [
             collect($payments)->first(
                 function ($payment) {
 
-                    $status = strtoupper(
-                        (string) (
-                            $payment['payment_status']
-                            ?? ''
-                        )
-                    );
+                    $status =
+                        strtoupper(
+                            (string) (
+                                $payment['payment_status']
+                                ?? ''
+                            )
+                        );
 
                     return in_array(
                         $status,
@@ -668,6 +753,61 @@ Log::info('CASHFREE CREATE CALLED', [
 
         if ($successfulPayment) {
 
+            /*
+            |--------------------------------------------------------------------------
+            | VERIFY PAYMENT AMOUNT
+            |--------------------------------------------------------------------------
+            */
+
+            $paymentAmount =
+                $successfulPayment['payment_amount']
+                ?? $successfulPayment['order_amount']
+                ?? null;
+
+            $expectedAmount =
+                round(
+                    (float) $order->total_amount,
+                    2
+                );
+
+            if (
+                $paymentAmount !== null &&
+                round(
+                    (float) $paymentAmount,
+                    2
+                ) !== $expectedAmount
+            ) {
+
+                Log::critical(
+                    'Cashfree payment amount mismatch.',
+                    [
+                        'order_id' =>
+                            $order->id,
+
+                        'cashfree_order_id' =>
+                            $cashfreeOrderId,
+
+                        'expected_amount' =>
+                            $expectedAmount,
+
+                        'received_amount' =>
+                            $paymentAmount,
+                    ]
+                );
+
+                return $this->paymentReturnRedirect(
+                    $order,
+                    $source,
+                    'Payment amount verification failed. Please contact support.'
+                );
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | SAVE PAID STATUS
+            |--------------------------------------------------------------------------
+            */
+
             DB::transaction(
                 function () use (
                     $order,
@@ -687,50 +827,63 @@ Log::info('CASHFREE CREATE CALLED', [
                     }
 
                     /*
-                    |--------------------------------------------------------------
-                    | PAYMENT SUCCESS
-                    |--------------------------------------------------------------
+                    |--------------------------------------------------------------------------
+                    | NEVER DOWNGRADE PAID ORDER
+                    |--------------------------------------------------------------------------
+                    */
+
+                    if (
+                        $lockedOrder->payment_status
+                        === 'paid'
+                    ) {
+                        return;
+                    }
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | MARK PAID
+                    |--------------------------------------------------------------------------
                     */
 
                     $lockedOrder->payment_status =
                         'paid';
 
                     /*
-                    |--------------------------------------------------------------
-                    | IMPORTANT
-                    |--------------------------------------------------------------
-                    |
-                    | If customer originally selected COD,
-                    | this changes it to ONLINE.
-                    |
+                    |--------------------------------------------------------------------------
+                    | ONLINE PAYMENT
+                    |--------------------------------------------------------------------------
                     */
 
                     $lockedOrder->payment_method =
                         'online';
 
-                    $lockedOrder->payment_id =
-                        $successfulPayment[
-                            'cf_payment_id'
-                        ]
-                        ??
-                        $successfulPayment[
-                            'payment_id'
-                        ]
-                        ??
-                        $lockedOrder->payment_id;
-
                     /*
-                    |--------------------------------------------------------------
-                    | DO NOT COMPLETE DELIVERY HERE
-                    |--------------------------------------------------------------
-                    |
-                    | Staff still has to click Complete Delivery.
-                    |
+                    |--------------------------------------------------------------------------
+                    | PAYMENT ID
+                    |--------------------------------------------------------------------------
                     */
+
+                    $paymentId =
+                        $successfulPayment['cf_payment_id']
+                        ?? $successfulPayment['payment_id']
+                        ?? null;
+
+                    if ($paymentId) {
+                        $lockedOrder->payment_id =
+                            $paymentId;
+                    }
 
                     $lockedOrder->save();
                 }
             );
+
+            /*
+            |--------------------------------------------------------------------------
+            | REFRESH ORDER
+            |--------------------------------------------------------------------------
+            */
+
+            $order->refresh();
 
             Log::info(
                 'Cashfree payment successful.',
@@ -761,9 +914,9 @@ Log::info('CASHFREE CREATE CALLED', [
                     ->route('staff.dashboard')
                     ->with(
                         'success',
-                        'Online payment successful. Order #' .
-                        $order->id .
-                        ' is now marked as paid.'
+                        'Online payment successful. Order #'
+                        . $order->id
+                        . ' is now marked as paid.'
                     );
             }
 
@@ -789,8 +942,9 @@ Log::info('CASHFREE CREATE CALLED', [
 
         if ($pendingPayment) {
 
-            if ($order->payment_status !== 'paid') {
-
+            if (
+                $order->payment_status !== 'paid'
+            ) {
                 $order->payment_status =
                     'pending';
 
@@ -812,8 +966,9 @@ Log::info('CASHFREE CREATE CALLED', [
 
         if ($userDroppedPayment) {
 
-            if ($order->payment_status !== 'paid') {
-
+            if (
+                $order->payment_status !== 'paid'
+            ) {
                 $order->payment_status =
                     'pending';
 
@@ -829,27 +984,28 @@ Log::info('CASHFREE CREATE CALLED', [
 
         /*
         |--------------------------------------------------------------------------
-        | FAILED
+        | FAILED / CANCELLED
         |--------------------------------------------------------------------------
         */
 
         if ($failedPayment) {
 
-            if ($order->payment_status !== 'paid') {
+            if (
+                $order->payment_status !== 'paid'
+            ) {
 
                 $order->payment_status =
                     'failed';
 
-                $order->payment_id =
-                    $failedPayment[
-                        'cf_payment_id'
-                    ]
-                    ??
-                    $failedPayment[
-                        'payment_id'
-                    ]
-                    ??
-                    $order->payment_id;
+                $paymentId =
+                    $failedPayment['cf_payment_id']
+                    ?? $failedPayment['payment_id']
+                    ?? null;
+
+                if ($paymentId) {
+                    $order->payment_id =
+                        $paymentId;
+                }
 
                 $order->save();
             }
@@ -867,8 +1023,9 @@ Log::info('CASHFREE CREATE CALLED', [
         |--------------------------------------------------------------------------
         */
 
-        if ($order->payment_status !== 'paid') {
-
+        if (
+            $order->payment_status !== 'paid'
+        ) {
             $order->payment_status =
                 'pending';
 
@@ -882,7 +1039,6 @@ Log::info('CASHFREE CREATE CALLED', [
         );
     }
 
-
     /*
     |--------------------------------------------------------------------------
     | PAYMENT RETURN REDIRECT
@@ -890,10 +1046,15 @@ Log::info('CASHFREE CREATE CALLED', [
     */
 
     private function paymentReturnRedirect(
-        Order $order,
+        ?Order $order,
         string $source,
         string $message
     ) {
+        /*
+        |--------------------------------------------------------------------------
+        | STAFF
+        |--------------------------------------------------------------------------
+        */
 
         if ($source === 'staff') {
 
@@ -905,6 +1066,12 @@ Log::info('CASHFREE CREATE CALLED', [
                 );
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | CUSTOMER
+        |--------------------------------------------------------------------------
+        */
+
         if (Auth::check()) {
 
             return redirect()
@@ -915,6 +1082,12 @@ Log::info('CASHFREE CREATE CALLED', [
                 );
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | GUEST
+        |--------------------------------------------------------------------------
+        */
+
         return redirect()
             ->route('home')
             ->with(
@@ -922,7 +1095,6 @@ Log::info('CASHFREE CREATE CALLED', [
                 $message
             );
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -932,28 +1104,48 @@ Log::info('CASHFREE CREATE CALLED', [
 
     public function webhook(Request $request)
     {
+        /*
+        |--------------------------------------------------------------------------
+        | RAW BODY
+        |--------------------------------------------------------------------------
+        |
+        | IMPORTANT:
+        | Signature must be calculated using the ORIGINAL raw request body.
+        |
+        */
+
         $rawBody =
             $request->getContent();
 
+        /*
+        |--------------------------------------------------------------------------
+        | CASHFREE SIGNATURE HEADERS
+        |--------------------------------------------------------------------------
+        */
+
         $signature =
-            $request->header(
-                'x-webhook-signature'
+            trim(
+                (string) $request->header(
+                    'x-webhook-signature'
+                )
             );
 
         $timestamp =
-            $request->header(
-                'x-webhook-timestamp'
+            trim(
+                (string) $request->header(
+                    'x-webhook-timestamp'
+                )
             );
 
         /*
         |--------------------------------------------------------------------------
-        | SIGNATURE CHECK
+        | CHECK SIGNATURE HEADERS
         |--------------------------------------------------------------------------
         */
 
         if (
-            !$signature ||
-            !$timestamp
+            $signature === '' ||
+            $timestamp === ''
         ) {
 
             Log::warning(
@@ -962,7 +1154,9 @@ Log::info('CASHFREE CREATE CALLED', [
 
             return response()->json(
                 [
-                    'success' => false,
+                    'success' =>
+                        false,
+
                     'message' =>
                         'Missing webhook signature.',
                 ],
@@ -970,9 +1164,17 @@ Log::info('CASHFREE CREATE CALLED', [
             );
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | CASHFREE SECRET
+        |--------------------------------------------------------------------------
+        */
+
         $secret =
-            (string) config(
-                'services.cashfree.client_secret'
+            trim(
+                (string) config(
+                    'services.cashfree.client_secret'
+                )
             );
 
         if ($secret === '') {
@@ -983,7 +1185,9 @@ Log::info('CASHFREE CREATE CALLED', [
 
             return response()->json(
                 [
-                    'success' => false,
+                    'success' =>
+                        false,
+
                     'message' =>
                         'Webhook configuration error.',
                 ],
@@ -995,6 +1199,16 @@ Log::info('CASHFREE CREATE CALLED', [
         |--------------------------------------------------------------------------
         | VERIFY SIGNATURE
         |--------------------------------------------------------------------------
+        |
+        | Cashfree webhook signature:
+        |
+        | Base64(
+        |     HMAC-SHA256(
+        |         timestamp + rawBody,
+        |         clientSecret
+        |     )
+        | )
+        |
         */
 
         $expectedSignature =
@@ -1020,7 +1234,9 @@ Log::info('CASHFREE CREATE CALLED', [
 
             return response()->json(
                 [
-                    'success' => false,
+                    'success' =>
+                        false,
+
                     'message' =>
                         'Invalid webhook signature.',
                 ],
@@ -1030,7 +1246,7 @@ Log::info('CASHFREE CREATE CALLED', [
 
         /*
         |--------------------------------------------------------------------------
-        | JSON
+        | PARSE JSON
         |--------------------------------------------------------------------------
         */
 
@@ -1042,9 +1258,15 @@ Log::info('CASHFREE CREATE CALLED', [
 
         if (!is_array($payload)) {
 
+            Log::warning(
+                'Cashfree webhook rejected: invalid JSON payload.'
+            );
+
             return response()->json(
                 [
-                    'success' => false,
+                    'success' =>
+                        false,
+
                     'message' =>
                         'Invalid webhook payload.',
                 ],
@@ -1069,11 +1291,26 @@ Log::info('CASHFREE CREATE CALLED', [
                 'order_id'
             );
 
-        if (!$cashfreeOrderId) {
+        $cashfreeOrderId =
+            trim(
+                (string) $cashfreeOrderId
+            );
+
+        if ($cashfreeOrderId === '') {
+
+            Log::warning(
+                'Cashfree webhook rejected: order ID missing.',
+                [
+                    'payload' =>
+                        $payload,
+                ]
+            );
 
             return response()->json(
                 [
-                    'success' => false,
+                    'success' =>
+                        false,
+
                     'message' =>
                         'Order ID missing.',
                 ],
@@ -1103,8 +1340,16 @@ Log::info('CASHFREE CREATE CALLED', [
                 ]
             );
 
+            /*
+            |--------------------------------------------------------------------------
+            | Return 200 so Cashfree does not repeatedly retry an unknown
+            | order that does not belong to this application.
+            |--------------------------------------------------------------------------
+            */
+
             return response()->json([
-                'success' => true,
+                'success' =>
+                    true,
             ]);
         }
 
@@ -1150,11 +1395,72 @@ Log::info('CASHFREE CREATE CALLED', [
 
         /*
         |--------------------------------------------------------------------------
-        | SUCCESS
+        | SUCCESS WEBHOOK
         |--------------------------------------------------------------------------
         */
 
         if ($paymentStatus === 'SUCCESS') {
+
+            /*
+            |--------------------------------------------------------------------------
+            | VERIFY AMOUNT IF PRESENT
+            |--------------------------------------------------------------------------
+            */
+
+            $webhookAmount =
+                data_get(
+                    $payload,
+                    'data.payment.payment_amount'
+                );
+
+            $expectedAmount =
+                round(
+                    (float) $order->total_amount,
+                    2
+                );
+
+            if (
+                $webhookAmount !== null &&
+                round(
+                    (float) $webhookAmount,
+                    2
+                ) !== $expectedAmount
+            ) {
+
+                Log::critical(
+                    'Cashfree webhook payment amount mismatch.',
+                    [
+                        'order_id' =>
+                            $order->id,
+
+                        'cashfree_order_id' =>
+                            $cashfreeOrderId,
+
+                        'expected_amount' =>
+                            $expectedAmount,
+
+                        'received_amount' =>
+                            $webhookAmount,
+                    ]
+                );
+
+                return response()->json(
+                    [
+                        'success' =>
+                            false,
+
+                        'message' =>
+                            'Payment amount mismatch.',
+                    ],
+                    400
+                );
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | TRANSACTION
+            |--------------------------------------------------------------------------
+            */
 
             DB::transaction(
                 function () use (
@@ -1175,7 +1481,9 @@ Log::info('CASHFREE CREATE CALLED', [
                     }
 
                     /*
-                    | Never downgrade paid order.
+                    |--------------------------------------------------------------------------
+                    | IDEMPOTENCY
+                    |--------------------------------------------------------------------------
                     */
 
                     if (
@@ -1185,18 +1493,31 @@ Log::info('CASHFREE CREATE CALLED', [
                         return;
                     }
 
+                    /*
+                    |--------------------------------------------------------------------------
+                    | MARK PAID
+                    |--------------------------------------------------------------------------
+                    */
+
                     $lockedOrder->payment_status =
                         'paid';
 
                     /*
-                    | COD → ONLINE
+                    |--------------------------------------------------------------------------
+                    | ONLINE PAYMENT
+                    |--------------------------------------------------------------------------
                     */
 
                     $lockedOrder->payment_method =
                         'online';
 
-                    if ($paymentId) {
+                    /*
+                    |--------------------------------------------------------------------------
+                    | PAYMENT ID
+                    |--------------------------------------------------------------------------
+                    */
 
+                    if ($paymentId) {
                         $lockedOrder->payment_id =
                             $paymentId;
                     }
@@ -1220,7 +1541,8 @@ Log::info('CASHFREE CREATE CALLED', [
             );
 
             return response()->json([
-                'success' => true,
+                'success' =>
+                    true,
             ]);
         }
 
@@ -1243,7 +1565,8 @@ Log::info('CASHFREE CREATE CALLED', [
             }
 
             return response()->json([
-                'success' => true,
+                'success' =>
+                    true,
             ]);
         }
 
@@ -1253,10 +1576,7 @@ Log::info('CASHFREE CREATE CALLED', [
         |--------------------------------------------------------------------------
         */
 
-        if (
-            $paymentStatus ===
-            'USER_DROPPED'
-        ) {
+        if ($paymentStatus === 'USER_DROPPED') {
 
             if (
                 $order->payment_status !== 'paid'
@@ -1269,7 +1589,8 @@ Log::info('CASHFREE CREATE CALLED', [
             }
 
             return response()->json([
-                'success' => true,
+                'success' =>
+                    true,
             ]);
         }
 
@@ -1298,7 +1619,6 @@ Log::info('CASHFREE CREATE CALLED', [
                     'failed';
 
                 if ($paymentId) {
-
                     $order->payment_id =
                         $paymentId;
                 }
@@ -1307,13 +1627,14 @@ Log::info('CASHFREE CREATE CALLED', [
             }
 
             return response()->json([
-                'success' => true,
+                'success' =>
+                    true,
             ]);
         }
 
         /*
         |--------------------------------------------------------------------------
-        | UNKNOWN
+        | UNKNOWN STATUS
         |--------------------------------------------------------------------------
         */
 
@@ -1328,11 +1649,22 @@ Log::info('CASHFREE CREATE CALLED', [
 
                 'payment_status' =>
                     $paymentStatus,
+
+                'payload' =>
+                    $payload,
             ]
         );
 
+        /*
+        |--------------------------------------------------------------------------
+        | ACKNOWLEDGE WEBHOOK
+        |--------------------------------------------------------------------------
+        */
+
         return response()->json([
-            'success' => true,
+            'success' =>
+                true,
         ]);
     }
 }
+

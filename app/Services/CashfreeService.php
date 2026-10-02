@@ -22,19 +22,26 @@ class CashfreeService
             (string) config('services.cashfree.client_secret')
         );
 
-        $this->apiVersion =
+        $this->apiVersion = trim(
             (string) config(
                 'services.cashfree.api_version',
                 '2025-01-01'
-            );
+            )
+        );
+
+        $environment = strtolower(
+            trim(
+                (string) config(
+                    'services.cashfree.environment',
+                    'sandbox'
+                )
+            )
+        );
 
         $this->baseUrl =
-            config(
-                'services.cashfree.environment',
-                'sandbox'
-            ) === 'production'
-            ? 'https://api.cashfree.com/pg'
-            : 'https://sandbox.cashfree.com/pg';
+            $environment === 'production'
+                ? 'https://api.cashfree.com/pg'
+                : 'https://sandbox.cashfree.com/pg';
 
         if (
             $this->clientId === '' ||
@@ -45,7 +52,6 @@ class CashfreeService
             );
         }
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -64,7 +70,27 @@ class CashfreeService
 
         /*
         |--------------------------------------------------------------------------
+        | NORMALIZE SOURCE
+        |--------------------------------------------------------------------------
+        */
+
+        $source = strtolower(trim($source));
+
+        if (!in_array($source, ['customer', 'staff'], true)) {
+            $source = 'customer';
+        }
+
+        /*
+        |--------------------------------------------------------------------------
         | RETURN URL
+        |--------------------------------------------------------------------------
+        |
+        | Cashfree redirects the customer/staff browser here after payment.
+        |
+        | Cashfree appends:
+        |
+        | ?order_id=YOUR_CASHFREE_ORDER_ID
+        |
         |--------------------------------------------------------------------------
         */
 
@@ -72,7 +98,7 @@ class CashfreeService
             'payment.cashfree.return',
             [
                 'order_id' => $orderId,
-                'source' => $source,
+                'source'   => $source,
             ]
         );
 
@@ -88,57 +114,51 @@ class CashfreeService
 
         /*
         |--------------------------------------------------------------------------
-        | CASHFREE REQUEST
+        | CASHFREE CREATE ORDER REQUEST
         |--------------------------------------------------------------------------
         */
 
         $response = Http::withHeaders([
-            'x-client-id' => trim($this->clientId),
-            'x-client-secret' => trim($this->clientSecret),
-            'x-api-version' => trim($this->apiVersion),
-            'Accept' => 'application/json',
-            'Content-Type' => 'application/json',
-        ])->post(
-                $this->baseUrl . '/orders',
-                [
-                    'order_id' =>
-                        $orderId,
+            'x-client-id'     => $this->clientId,
+            'x-client-secret' => $this->clientSecret,
+            'x-api-version'   => $this->apiVersion,
+            'Accept'          => 'application/json',
+            'Content-Type'    => 'application/json',
+        ])
+        ->timeout(30)
+        ->post(
+            $this->baseUrl . '/orders',
+            [
+                'order_id' => $orderId,
 
-                    'order_amount' =>
-                        round(
-                            $amount,
-                            2
-                        ),
+                'order_amount' => round(
+                    $amount,
+                    2
+                ),
 
-                    'order_currency' =>
-                        'INR',
+                'order_currency' => 'INR',
 
-                    'customer_details' => [
+                'customer_details' => [
 
-                        'customer_id' =>
-                            $customerId,
+                    'customer_id' => $customerId,
 
-                        'customer_phone' =>
-                            $customerPhone,
+                    'customer_phone' => $customerPhone,
 
-                        'customer_email' =>
-                            $customerEmail,
-                    ],
+                    'customer_email' => $customerEmail,
+                ],
 
-                    'order_meta' => [
+                'order_meta' => [
 
-                        'return_url' =>
-                            $returnUrl,
+                    'return_url' => $returnUrl,
 
-                        'notify_url' =>
-                            $notifyUrl,
-                    ],
-                ]
-            );
+                    'notify_url' => $notifyUrl,
+                ],
+            ]
+        );
 
         /*
         |--------------------------------------------------------------------------
-        | ERROR
+        | CASHFREE ERROR
         |--------------------------------------------------------------------------
         */
 
@@ -156,13 +176,39 @@ class CashfreeService
         |--------------------------------------------------------------------------
         */
 
-        return $response->json();
-    }
+        $data = $response->json();
 
+        if (!is_array($data)) {
+
+            throw new RuntimeException(
+                'Invalid response received from Cashfree.'
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | PAYMENT SESSION CHECK
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            empty(
+                $data['payment_session_id']
+                ?? null
+            )
+        ) {
+
+            throw new RuntimeException(
+                'Cashfree did not return a payment session ID.'
+            );
+        }
+
+        return $data;
+    }
 
     /*
     |--------------------------------------------------------------------------
-    | GET PAYMENTS
+    | GET PAYMENTS FOR ORDER
     |--------------------------------------------------------------------------
     */
 
@@ -182,12 +228,20 @@ class CashfreeService
 
             'Accept' =>
                 'application/json',
-        ])->get(
-                $this->baseUrl .
-                '/orders/' .
-                $orderId .
-                '/payments'
-            );
+        ])
+        ->timeout(30)
+        ->get(
+            $this->baseUrl .
+            '/orders/' .
+            $orderId .
+            '/payments'
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | ERROR
+        |--------------------------------------------------------------------------
+        */
 
         if ($response->failed()) {
 
@@ -197,10 +251,18 @@ class CashfreeService
             );
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | RESPONSE
+        |--------------------------------------------------------------------------
+        */
+
         $data = $response->json();
 
-        return is_array($data)
-            ? $data
-            : [];
+        if (!is_array($data)) {
+            return [];
+        }
+
+        return $data;
     }
 }

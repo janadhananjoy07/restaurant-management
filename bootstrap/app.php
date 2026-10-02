@@ -12,10 +12,31 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
 
-        // Trust Railway's reverse proxy so Laravel detects HTTPS correctly
+        // Trust Railway's reverse proxy
+        // so Laravel correctly detects HTTPS.
         $middleware->trustProxies(at: '*');
 
-        // Register your custom alias here
+        /*
+        |--------------------------------------------------------------------------
+        | CSRF EXCEPTIONS
+        |--------------------------------------------------------------------------
+        |
+        | Cashfree sends the webhook directly to Laravel.
+        | It does not have Laravel's CSRF token, so this route
+        | must be excluded from CSRF verification.
+        |
+        */
+
+        $middleware->validateCsrfTokens(except: [
+            'payment/cashfree/webhook',
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | CUSTOM MIDDLEWARE ALIASES
+        |--------------------------------------------------------------------------
+        */
+
         $middleware->alias([
             'user.auth' => \App\Http\Middleware\AuthMiddleware::class,
         ]);

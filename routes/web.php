@@ -585,42 +585,21 @@ Route::get('/reviews', [
 |--------------------------------------------------------------------------
 */
 
+// Customer must be logged in to CREATE payment
 Route::middleware([AuthMiddleware::class])
-    ->group(function () {
+    ->post('/payment/cashfree/create', [
+        PaymentController::class,
+        'create'
+    ])->name('payment.cashfree.create');
 
-        /*
-        |--------------------------------------------------------------------------
-        | CREATE CUSTOMER ONLINE PAYMENT
-        |--------------------------------------------------------------------------
-        */
+// Cashfree return — NO AuthMiddleware
+Route::get('/payment/cashfree/return', [
+    PaymentController::class,
+    'return'
+])->name('payment.cashfree.return');
 
-        Route::post('/payment/cashfree/create', [
-            PaymentController::class,
-            'create'
-        ])->name('payment.cashfree.create');
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | CASHFREE RETURN
-        |--------------------------------------------------------------------------
-        */
-
-        Route::get('/payment/cashfree/return', [
-            PaymentController::class,
-            'return'
-        ])->name('payment.cashfree.return');
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | CASHFREE WEBHOOK
-        |--------------------------------------------------------------------------
-        */
-
-        Route::post('/payment/cashfree/webhook', [
-            PaymentController::class,
-            'webhook'
-        ])->name('payment.cashfree.webhook');
-    });
-
+// Cashfree webhook — NO AuthMiddleware
+Route::post('/payment/cashfree/webhook', [
+    PaymentController::class,
+    'webhook'
+])->name('payment.cashfree.webhook');
